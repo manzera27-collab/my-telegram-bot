@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 # ========================= ПРОБНАЯ ВЕРСИЯ =========================
-API_TOKEN = '8307912076:AAGtdrxPS-zSNWDf1SuDxEWvwJb4FgTCSyA'
+API_TOKEN = '8307912076:AAG6neSMpuFIVFmTY0Pi-rHco66Tqn94uwo'
 # ================================================================
 
 MEISTER_ERHALTEN = True          # для базовых чисел (1/11/22/33) где уместно
