@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import csv
-import io
-import json
-import os
 import re
-from datetime import datetime, timedelta, date
+from datetime import datetime
 from typing import Tuple, List, Dict
 
 from telegram import (
-    Update, InlineKeyboardButton, InlineKeyboardMarkup, User, InputFile
+    Update, InlineKeyboardButton, InlineKeyboardMarkup
 )
 from telegram.ext import (
     Application, CommandHandler, ContextTypes, MessageHandler,
@@ -19,19 +15,17 @@ from telegram.ext import (
 # ========================= ПРОБНАЯ ВЕРСИЯ =========================
 API_TOKEN = '8307912076:AAG6neSMpuFIVFmTY0Pi-rHco66Tqn94uwo'
 # ================================================================
-
-MEISTER_ERHALTEN = True          # для базовых чисел (1/11/22/33) где уместно
+MEISTER_ERHALTEN = True
 DATE_REGEX = r'^\s*(\d{1,2})[.\s](\d{1,2})[.\s](\d{4})\s*$'
 
 # --------- DONATE / ANALYTICS CONFIG ----------
 DONATE_EMAIL = "manzera@mail.ru"
-# PayPal рекомендует URL-кодировать адрес: @ -> %40
+# В URL @ должен быть закодирован как %40 — иначе Telegram тоже ругается.
 PAYPAL_URL = "https://www.paypal.com/donate?business=manzera%40mail.ru"
 ANALYTICS_PATH = "analytics.json"
-RETAIN_DAYS = 90  # храним агрегаты по датам не дольше 90 дней
-ADMIN_IDS = set()  # TODO: 6480688287
+RETAIN_DAYS = 90
+ADMIN_IDS = set()  # TODO: добавь сюда свой Telegram ID, напр. {123456789}
 ADMIN_STATS_BUTTON = True  # показывать кнопку "Статистика" админам
-
 # ----------------------------- Utils -----------------------------
 def html_escape(s: str) -> str:
     return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
@@ -150,6 +144,38 @@ In Ihnen ist die Energie des Dienens und der Vollendung angelegt. Mitgefühl, Ge
 }
 
 # ПОЛНЫЕ тексты Geisteszahl 1–9 — буквально из книги (кнопка «Mehr lesen»)
+GEISTES_FULL_TXT = {
+    1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
+
+Sie sind ein geborener Anführer, eine sehr starke Person mit großem Willen. ...""",
+    2: """(Menschen, geboren am 2., 11., 20., 29. eines Monats):
+
+Sie sind in diese Welt gekommen, um sich durch Verständnis und Beziehungen zu verwirklichen. ...""",
+    3: """(Menschen, geboren am 3., 12., 21., 30. eines Monats):
+
+Sie sind Träger von Wissen, das Ihnen von Geburt an gegeben wurde. ...""",
+    4: """(Menschen, geboren am 4., 13., 22., 31. eines Monats):
+
+Viele Menschen nehmen die Energie 4 negativ wahr, doch sie ist die Kraft der Struktur und Vollendung. ...""",
+    5: """(Menschen, geboren am 5., 14. oder 23. eines Monats):
+
+Sie sind ein pragmatischer Mensch, lieben konsequentes Handeln, ...""",
+    6: """(Menschen, geboren am 6., 15. oder 24. eines Monats):
+
+Weisheit, Erfolg und Liebe – die Qualitäten Ihrer Seele. ...""",
+    7: """(Menschen, geboren am 7., 16. oder 25. eines Monats):
+
+Sie sind ein genialer Mensch – aber nur mit Disziplin. ...""",
+    8: """(Menschen, geboren am 8., 17. oder 26. eines Monats):
+
+Sie sind in diese Welt gekommen, um alles zu kontrollieren. ...""",
+    9: """(Menschen, geboren am 9., 18. oder 27. eines Monats):
+
+Dienst, Hilfe für andere und das Erlangen maximaler Weisheit. ...""",
+}
+
+# --- НОВОЕ: Точечные описания по конкретному дню рождения (1..31) ---
+# Заполни позже буквальным текстом (сейчас — короткие заглушки).
 from typing import Dict
 
 DAY_BIRTH_TXT: Dict[int, str] = {
@@ -261,11 +287,8 @@ Befinden Sie sich jedoch in einer „negativen Phase“, neigen Sie zu Intrigen 
 Oft faulenzen Menschen, die am 30. geboren sind, bei ihrer Selbstbildung und sind nicht zum Lesen von Literatur geneigt. Aber tatsächlich ist die Steigerung Ihrer Allgemeinbildung der beste Weg, um schnell Erfolg zu haben. Im Idealfall sollten Sie Spezialist in mehreren Bereichen gleichzeitig werden. Dann werden Sie den Gegenstand viel besser verstehen als andere Menschen, und Ihre stürmische Energie wird Ihnen helfen, Ziele schneller zu erreichen.""",
 
     31: """Bedeutung des Geburtstages 31 Sie sind ein Mensch mit großem Verstand und hervorragenden Führungsqualitäten. Diese Eigenschaft kann Ihnen sehr schnell Resultate bringen, kann jedoch auch zur Ursache von Zerstörung werden. Über Sie sagt man: „Unglück durch zu viel Verstand“. Sie wissen alles, wollen jedoch andere Menschen nicht verstehen – und genau dieses Hindernis müssen Sie in sich überwinden.
-Menschen, die an diesem Tag geboren sind, haben eine globale Bestimmung, die manchmal schwer zu begreifen und zu erkennen ist. Mit Hilfe Ihres Intellekts und Ihrer Führungsqualitäten müssen Sie globale und kreative Projekte erschaffen. Doch Ihr Bewusstsein sollte dabei auf Liebe und Dienst an den Menschen ausgerichtet sein. Nur in diesem Fall können sich Ihre genialen Ideen wirklich verwirklichen und der ganzen Welt großen Nutzen bringen.""" }
-
-# --- НОВОЕ: Точечные описания по конкретному дню рождения (1..31) ---
-# Заполни позже буквальным текстом (сейчас — короткие заглушки).
-DAY_BIRTH_TXT: Dict[int, str] = {i: f"Bedeutung des Geburtstages {i} – TODO (voller Text später)." for i in range(1, 32)}
+Menschen, die an diesem Tag geboren sind, haben eine globale Bestimmung, die manchmal schwer zu begreifen und zu erkennen ist. Mit Hilfe Ihres Intellekts und Ihrer Führungsqualitäten müssen Sie globale und kreative Projekte erschaffen. Doch Ihr Bewusstsein sollte dabei auf Liebe und Dienst an den Menschen ausgerichtet sein. Nur in diesem Fall können sich Ihre genialen Ideen wirklich verwirklichen und der ganzen Welt großen Nutzen bringen.""" 
+}
 
 # Tagesenergie 1–9 — буквально из книги
 TAG_TXT = {
@@ -310,7 +333,7 @@ PARTNERSCHAFT_TXT = {
         "Lebendig, inspirierend, voller Kommunikation, Reisen, Lernen. "
         "Struktur und klare Prioritäten verhindern Zerstreuung."),
     4: ("💞 Partnerschaft 4\n\n"
-        "Praktisch und stabil. Ordnung, Disziplin и Beständigkeit prägen das Zusammensein. "
+        "Praktisch und stabil. Ordnung, Disziplin und Beständigkeit prägen das Zusammensein. "
         "Raum für Spontaneität einplanen."),
     5: ("💞 Partnerschaft 5\n\n"
         "Kommunikativ, beweglich, abenteuerlustig. Offen für neue Erfahrungen. "
@@ -343,22 +366,22 @@ KOLLEKTIV_TXT = {
     7: ("👥 Kollektivenergie 7\n\n"
         "Forschend, diszipliniert, tief. Ergebnisse teilen, Wissen praktisch anwenden."),
     8: ("👥 Kollektivenergie 8\n\n"
-        "Leistungsstark, zielorientiert, Management. Transparenz und Ethik для Vertrauen."),
+        "Leistungsstark, zielorientiert, Management. Transparenz und Ethik für Vertrauen."),
     9: ("👥 Kollektivenergie 9\n\n"
         "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung kultivieren."),
 }
 
-# Entwicklungspfad + Zu vermeiden
+# Entwicklungspfad (из книги — логика пути «через что к чему», без формул) + Zu vermeiden
 ENTWICKLUNGSPFAD = {
     1: "Die 1 reift zur 4 — über Beziehung (2) und Ausdruck (3): aus Impuls werden Disziplin und Struktur.",
     2: "Die 2 strebt zur 5 — über Wissen/Kommunikation (3) und Ordnung (4): Harmonie wird zu bewusster Freiheit.",
     3: "Die 3 entfaltet sich zur 6 — über Struktur (4) und Wandel (5): Kreativität wird zu reifer Verantwortung.",
-    4: "Die 4 wächst zur 7 — über Freiheit (5) и Liebe/Verantwortung (6): Ordnung wird zu innerer Weisheit.",
+    4: "Die 4 wächst zur 7 — über Freiheit (5) und Liebe/Verantwortung (6): Ordnung wird zu innerer Weisheit.",
     5: "Die 5 strebt zur 8 — über 6 und 7: zuerst Liebe/Verantwortung (6), dann Wahrheit/Disziplin (7), und erst dann gerechter Erfolg (8).",
     6: "Die 6 geht zur 9 — über Tiefgang (7) und Macht/Erfolg (8): zur universellen Liebe und zum Dienst.",
     7: "Die 7 geht zur 1 — über 8 und 9: Disziplin & Macht (8), Abschluss & Dienst (9) hin zur reifen Führung (1).",
-    8: "Die 8 strebt zur 2 — über 9 und 1: von Macht zu Kooperation и Diplomatie.",
-    9: "Die 9 findet zur 3 — über 1 и 2: Dienst & Vollendung führen zu leichtem, schöpferischem Ausdruck.",
+    8: "Die 8 strebt zur 2 — über 9 und 1: von Macht zu Kooperation und Diplomatie.",
+    9: "Die 9 findet zur 3 — über 1 und 2: Dienst & Vollendung führen zu leichtem, schöpferischem Ausdruck.",
 }
 ZU_VERMEIDEN = {
     1: "Ego-Alleingänge, Ungeduld, Dominanz.",
@@ -371,12 +394,11 @@ ZU_VERMEIDEN = {
     8: "Machtspiele, Mikromanagement, Erfolgsfixierung.",
     9: "Selbstaufopferung, diffuse Ziele, Grenzenlosigkeit.",
 }
-
 # ----------------------------- DONATE UI ------------------------------
 DONATE_TEXT = (
     f"\n\n🙏 <b>Unterstützen Sie KeyToFate</b>\n"
     f"Wenn Ihnen dieses Projekt gefällt, können Sie es mit einer Spende unterstützen.\n"
-    f"PayPal-E-Mail: <b>{html_escape(DONATE_EMAIL)}</b>\n"
+    f"PayPal: <b>{html_escape(DONATE_EMAIL)}</b>\n"
     f"<i>Vielen Dank für Ihre Hilfe!</i>"
 )
 
@@ -388,8 +410,8 @@ def donate_keyboard(extra_rows: List[List[InlineKeyboardButton]] | None = None,
     rows: List[List[InlineKeyboardButton]] = []
     if extra_rows:
         rows.extend(extra_rows)
+    # Только HTTPS-ссылки! Никаких mailto: — иначе BUTTON_URL_INVALID.
     rows.append([InlineKeyboardButton("💖 Spende (PayPal)", url=PAYPAL_URL)])
-    rows.append([InlineKeyboardButton(f"📧 {DONATE_EMAIL}", url=f"mailto:{DONATE_EMAIL}")])
     if include_stats and ADMIN_STATS_BUTTON:
         rows.append([InlineKeyboardButton("📊 Statistik", callback_data="show_stats")])
     rows.append([InlineKeyboardButton("⬅️ Zurück zum Menü", callback_data="back_menu")])
@@ -412,7 +434,6 @@ def load_analytics() -> dict:
         return {"total_events": 0, "users": {}, "by_date": {}}
 
 def _rotate_analytics(data: dict) -> dict:
-    """Удаляем агрегаты по датам старше RETAIN_DAYS; пользователей не трогаем."""
     try:
         cutoff = date.today() - timedelta(days=RETAIN_DAYS)
         by_date = data.get("by_date", {})
@@ -423,7 +444,6 @@ def _rotate_analytics(data: dict) -> dict:
                 if d >= cutoff:
                     new_by_date[dstr] = rec
             except Exception:
-                # если мусорный ключ — пропускаем
                 pass
         data["by_date"] = new_by_date
     except Exception as e:
@@ -442,7 +462,6 @@ def _user_key(u: User) -> str:
     return str(u.id)
 
 def track_event(update: Update, kind: str) -> None:
-    """kind: 'start','menu','callback','full','day','compat','name','group','path','fallback','other'."""
     try:
         user = update.effective_user
         if not user:
@@ -485,7 +504,6 @@ def format_stats() -> str:
     today_events = int(today_rec.get("events", 0))
     today_unique = len(today_rec.get("unique_users", []))
 
-    # за 7 дней
     last7_events = 0
     unique7_set = set()
     today_dt = datetime.now().date()
@@ -509,16 +527,13 @@ def format_stats() -> str:
     return text
 
 def export_csv_files() -> List[tuple[str, bytes]]:
-    """Возвращает список (filename, content_bytes) для отправки как документы."""
     data = load_analytics()
     by_date = data.get("by_date", {})
     users = data.get("users", {})
 
-    # 1) По датам
     buf1 = io.StringIO()
     w1 = csv.writer(buf1)
     w1.writerow(["date", "events", "unique_users_count", "unique_users_ids"])
-    # сортируем по дате возрастания
     for dstr in sorted(by_date.keys()):
         rec = by_date[dstr]
         events = int(rec.get("events", 0))
@@ -526,7 +541,6 @@ def export_csv_files() -> List[tuple[str, bytes]]:
         w1.writerow([dstr, events, len(uu), " ".join(uu)])
     file1 = ("analytics_by_date.csv", buf1.getvalue().encode("utf-8"))
 
-    # 2) По пользователям
     buf2 = io.StringIO()
     w2 = csv.writer(buf2)
     w2.writerow(["user_id", "username", "first_seen", "last_seen", "events"])
@@ -541,7 +555,6 @@ def export_csv_files() -> List[tuple[str, bytes]]:
     file2 = ("analytics_users.csv", buf2.getvalue().encode("utf-8"))
 
     return [file1, file2]
-
 # ----------------------------- Меню ------------------------------
 ASK_DAY_BIRTH, ASK_COMPAT_1, ASK_COMPAT_2, ASK_NAME, ASK_GROUP, ASK_FULL, ASK_PATH = range(7)
 
@@ -564,7 +577,7 @@ WELCOME = (
     "Es hilft, Ihr wahres Potenzial zu entfalten und Harmonie mit sich und der Welt zu finden.\n\n"
     "Ihr Geburtsdatum birgt erstaunliche Erkenntnisse über Persönlichkeit und Bestimmung. "
     "Wer diese Gesetze versteht, entfaltet Talente und findet den eigenen Weg.\n\n"
-    "✨ Lüften Sie den Schleier Ihres Schicksals – и lassen Sie KeyToFate Ihr Wegweiser zum Glück sein. ✨\n\n"
+    "✨ Lüften Sie den Schleier Ihres Schicksals – und lassen Sie KeyToFate Ihr Wegweiser zum Glück sein. ✨\n\n"
     "➡️ Wählen Sie unten, um Ihre Reise zu beginnen:"
 )
 
@@ -640,12 +653,10 @@ async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
         e = ergebniszahl(g, h, v)
         geld = geldcode(d, m, y)
 
-        # кнопка «Mehr lesen» + Spende
         extra = [[InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")]]
         can_admin = _is_admin(update.effective_user)
         kb = donate_keyboard(extra_rows=extra, include_stats=can_admin)
 
-        # Точечный текст по ДНЮ рождения (1..31)
         day_text = DAY_BIRTH_TXT.get(d, "").strip()
         day_block = f"📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}\n\n" if day_text else ""
 
@@ -675,7 +686,7 @@ async def read_more_geist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     track_event(update, "callback")
     try:
-        data = q.data  # e.g. "more_g5"
+        data = q.data
         g = int(data.replace("more_g", ""))
         full = GEISTES_FULL_TXT.get(g)
         can_admin = _is_admin(update.effective_user)
@@ -758,15 +769,15 @@ async def ask_compat2(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ---- Namensenergie ----
 NAMENS_TXT = {
-    1: ("Die Namensenergie 1: Wille, Initiative, Führung."),
-    2: ("Die Namensenergie 2: Harmonie, Diplomatie, Ausgleich."),
-    3: ("Die Namensenergie 3: Kreativität, Wissen, Ausdruck."),
-    4: ("Die Namensenergie 4: Struktur, Ordnung, Ausdauer."),
-    5: ("Die Namensenergie 5: Freiheit, Bewegung, Wandel."),
-    6: ("Die Namensenergie 6: Liebe, Fürsorge, Verantwortung."),
-    7: ("Die Namensenergie 7: Weisheit, Analyse, Wahrheit."),
-    8: ("Die Namensenergie 8: Erfolg, Autorität, Management."),
-    9: ("Die Namensenergie 9: Dienst, Humanität, Vollendung."),
+    1: "Die Namensenergie 1: Wille, Initiative, Führung.",
+    2: "Die Namensenergie 2: Harmonie, Diplomatie, Ausgleich.",
+    3: "Die Namensenergie 3: Kreativität, Wissen, Ausdruck.",
+    4: "Die Namensenergie 4: Struktur, Ordnung, Ausdauer.",
+    5: "Die Namensenergie 5: Freiheit, Bewegung, Wandel.",
+    6: "Die Namensenergie 6: Liebe, Fürsorge, Verantwortung.",
+    7: "Die Namensenergie 7: Weisheit, Analyse, Wahrheit.",
+    8: "Die Namensenergie 8: Erfolg, Autorität, Management.",
+    9: "Die Namensenergie 9: Dienst, Humanität, Vollendung.",
 }
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     track_event(update, "name")
@@ -782,7 +793,7 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
-# ---- Kolleктивenergie ----
+# ---- Kollektivenergie ----
 async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (update.message.text or "").strip()
     track_event(update, "group")
@@ -860,13 +871,13 @@ async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_GROUP
 
-# ---- Entwicklungspfad (по Geisteszahl) ----
+# ---- Entwicklungspfad ----
 async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
     track_event(update, "path")
     try:
         d, m, y = parse_date(update.message.text.strip())
         g = geisteszahl(d)
-        pfad = ENTWICKLUNGСПFАД = ENTWICKЛUNGSPFAD.get(g, "")
+        pfad = ENTWICKLUNGSPFAD.get(g, "")
         avoid = ZU_VERMEIDEN.get(g, "")
         can_admin = _is_admin(update.effective_user)
         out = (
@@ -884,7 +895,7 @@ async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_PATH
 
-# ---- Vollanalyse при простом вводе даты (фоллбек) ----
+# ---- Vollanalyse фоллбек ----
 async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (update.message.text or "").strip()
     if text.startswith("/"):
@@ -898,7 +909,6 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         e = ergebniszahl(g, h, v)
         geld = geldcode(d, m, y)
 
-        # НОВОЕ: точечный текст по дню рождения
         day_text = DAY_BIRTH_TXT.get(d, "").strip()
         day_block = f"📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}\n\n" if day_text else ""
 
@@ -923,7 +933,7 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
     except Exception:
         pass
 
-# ---- /stats (nur Admins) ----
+# ---- /stats ----
 async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if _is_admin(user):
@@ -932,14 +942,13 @@ async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_html("⛔ Sie haben keine Berechtigung für /stats.", reply_markup=back_menu_kb())
 
-# ---- /export_stats (nur Admins) ----
+# ---- /export_stats ----
 async def export_stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not _is_admin(user):
         await update.message.reply_html("⛔ Sie haben keine Berechtigung für /export_stats.", reply_markup=back_menu_kb())
         return
     files = export_csv_files()
-    # отправляем оба CSV
     for fname, content in files:
         bio = io.BytesIO(content)
         bio.name = fname
@@ -961,18 +970,15 @@ def main():
     print("💖 Donate button URL:", PAYPAL_URL)
     app = Application.builder().token(API_TOKEN).build()
 
-    # Команды
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("menu", menu_cmd))
-    app.add_handler(CommandHandler("stats", stats_cmd))          # сводка
-    app.add_handler(CommandHandler("export_stats", export_stats_cmd))  # экспорт CSV
+    app.add_handler(CommandHandler("stats", stats_cmd))
+    app.add_handler(CommandHandler("export_stats", export_stats_cmd))
 
-    # Кнопки
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_menu$"))
     app.add_handler(CallbackQueryHandler(read_more_geist, pattern=r"^more_g[1-9]$"))
     app.add_handler(CallbackQueryHandler(show_stats_callback, pattern=r"^show_stats$"))
 
-    # Диалоговое меню
     conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(on_menu_click, pattern="^calc_")],
         states={
@@ -996,7 +1002,6 @@ def main():
     )
     app.add_handler(conv)
 
-    # Фоллбек: если просто прислали дату — Vollanalyse
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback))
 
     print("🤖 KeyToFate läuft. /start oder /menu → Hauptmenü. Statistik: /stats, Export: /export_stats. Spenden-Button aktiv.")
