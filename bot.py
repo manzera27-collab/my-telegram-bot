@@ -24,7 +24,7 @@ DONATE_EMAIL = "manzera@mail.ru"
 PAYPAL_URL = "https://www.paypal.com/donate?business=manzera%40mail.ru"
 ANALYTICS_PATH = "analytics.json"
 RETAIN_DAYS = 90
-ADMIN_IDS = { }   # <<< добавь сюда свой Telegram ID: например {123456789}
+ADMIN_IDS = {6480688287}
 
 MEISTER_ERHALTEN = True
 DATE_REGEX = r'^\s*(\d{1,2})[.\s](\d{1,2})[.\s](\d{4})\s*$'
@@ -35,7 +35,7 @@ def html_escape(s: str) -> str:
 
 def is_admin(update: Update) -> bool:
     u = update.effective_user
-    return bool(u and (not ADMIN_IDS or u.id in ADMIN_IDS))
+    return bool(u and (u.id in ADMIN_IDS))
 
 def parse_date(text: str) -> Tuple[int,int,int]:
     m = re.search(r'(\d{1,2})[.\s](\d{1,2})[.\s](\d{4})', text)
@@ -115,7 +115,7 @@ def namensenergie(text: str) -> int:
     return reduzieren(sum(vals)) if vals else 0
 
 # ---------------------- Тексты (коротко, длинные вставишь 
-КОРОТКИЕ аннотации Geisteszahl 1-9 - из первых предложений книги.
+# КОРОТКИЕ аннотации Geisteszahl 1-9 - из первых предложений книги.
 GEISTES_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
  
