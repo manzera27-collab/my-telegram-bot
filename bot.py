@@ -704,7 +704,8 @@ async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_PATH
 
-# ---- Vollanalyse при простом вводе даты (фоллбек) ----
+
+# ---- Vollanalyse при простом вводе даты (Fallback) ----
 async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (update.message.text or "").strip()
     if text.startswith("/"):
@@ -717,7 +718,6 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         e = ergebniszahl(g, h, v)
         geld = geldcode(d, m, y)
 
-        # НОВОЕ: точечный текст по дню рождения
         day_text = DAY_BIRTH_TXT.get(d, "").strip()
         day_block = f"📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}\n\n" if day_text else ""
 
@@ -728,7 +728,7 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         ]])
 
         out = (
-            f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>\n\n"
+            f"<b>🧮 Vollanalyse für {d:02d}.{m:02d}.{y}</b>\n\n"
             f"🧠 <b>Geisteszahl:</b> {g}\n{html_escape(GEISTES_TXT.get(g,'').strip())}\n\n"
             + day_block +
             f"⚡ <b>Handlungszahl:</b> {h}\n"
@@ -741,11 +741,35 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         )
         await update.message.reply_html(out, reply_markup=more_kb)
     except Exception:
+        # Молча игнорируем, чтобы не мешать другим хендлерам
         pass
 
-# ---------------------------- Bootstrap --------------------------
-# ConversationHandler мы уже создали выше (conv = ConversationHandler(...))
 
+# ---------------------------- Conversation --------------------------
+conv = ConversationHandler(
+    entry_points=[CallbackQueryHandler(on_menu_click, pattern=r"^calc_")],
+    states={
+        ASK_FULL:      [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_full),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+        ASK_DAY_BIRTH: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_day_birth),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+        ASK_COMPAT_1:  [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_compat1),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+        ASK_COMPAT_2:  [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_compat2),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+        ASK_NAME:      [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+        ASK_GROUP:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_group),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+        ASK_PATH:      [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_path),
+                        CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$")],
+    },
+    fallbacks=[CommandHandler("menu", menu_cmd)],
+    allow_reentry=True,
+)
+
+
+# ---------------------------- Bootstrap --------------------------
 def main():
     app = Application.builder().token(API_TOKEN).build()
 
@@ -756,19 +780,19 @@ def main():
     # Диалог-меню
     app.add_handler(conv)
 
-    # Глобальные callback’и — пусть обрабатываются до фоллбека
+    # Callback’и (выше фоллбека)
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$"), group=1)
     app.add_handler(CallbackQueryHandler(read_more_geist, pattern=r"^more_g[1-9]$"), group=1)
 
-    # Фоллбек на «просто дату» — САМЫЙ ПОСЛЕДНИЙ и в отдельной группе,
-    # чтобы не перехватывал ввод для состояний (например Entwicklungspfad)
+    # Фоллбек: если пользователь просто прислал дату
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback),
         group=2
     )
 
-    print("🤖 KeyToFate läuft. /start → Hauptmenü. Buttons reagieren, Pfad/Analyse funktionieren.")
+    print("🤖 KeyToFate läuft. /start → Hauptmenü. Entwicklungspfad и прочие функции активны.")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
