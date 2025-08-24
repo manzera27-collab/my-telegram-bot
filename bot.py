@@ -421,6 +421,15 @@ def back_menu_kb() -> InlineKeyboardMarkup:
     # простая кнопка «Назад», без доната (донат есть почти во всех ответах)
     return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Zurück zum Menü", callback_data="back_menu")]])
 
+def menu_with_donate_keyboard(is_admin_user: bool) -> InlineKeyboardMarkup:
+    """Главное меню + донат в самом низу (и статистика для админа)."""
+    base = main_menu().inline_keyboard[:]  # кнопки меню
+    extra = [[InlineKeyboardButton("💖 Spende (PayPal)", url=PAYPAL_URL)]]
+    if is_admin_user:
+        extra.append([InlineKeyboardButton("📊 Statistik", callback_data="show_stats")])
+    extra.append([InlineKeyboardButton("⬅️ Zurück zum Menü", callback_data="back_menu")])
+    return InlineKeyboardMarkup(base + extra)
+
 # ----------------------------- ANALYTICS ------------------------------
 def _now_iso() -> str: return datetime.now().isoformat(timespec="seconds")
 def _today_str() -> str: return datetime.now().date().isoformat()
@@ -571,20 +580,23 @@ MENU_HEADER = "🔽 <b>Hauptmenü</b>\nBitte wählen Sie:"
 # ---------------------------- Handlers ---------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     track_event(update, "start")
-    await update.message.reply_html(WELCOME + DONATE_TEXT,
-                                    reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+    # только приветствие и кнопка "➡️ Zum Menü"
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("➡️ Zum Menü", callback_data="back_menu")]
+    ])
+    await update.message.reply_html(WELCOME, reply_markup=kb)
 
 async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     track_event(update, "menu")
-    await update.message.reply_html(MENU_HEADER + DONATE_TEXT,
-                                    reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+    kb = menu_with_donate_keyboard(is_admin(update))
+    await update.message.reply_html(MENU_HEADER, reply_markup=kb)
 
 async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     track_event(update, "back_menu")
-    await q.message.reply_html(MENU_HEADER + DONATE_TEXT,
-                               reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+    kb = menu_with_donate_keyboard(is_admin(update))
+    await q.message.reply_html(MENU_HEADER, reply_markup=kb)
     return ConversationHandler.END
 
 async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
