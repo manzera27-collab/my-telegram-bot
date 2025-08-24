@@ -115,7 +115,7 @@ def namensenergie(text: str) -> int:
     return reduzieren(sum(vals)) if vals else 0
 
 # ---------------------- Тексты (коротко, длинные вставишь 
-КОРОТКИЕ аннотации Geisteszahl 1-9 — из первых предложений книги.
+КОРОТКИЕ аннотации Geisteszahl 1-9 - из первых предложений книги.
 GEISTES_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
  
