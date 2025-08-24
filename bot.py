@@ -686,6 +686,9 @@ async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ---- Entwicklungspfad (по Geisteszahl) ----
 async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
+        # снимаем "замок режима", чтобы фоллбек снова мог работать после обработки
+        context.user_data.pop("mode", None)
+
         d, m, y = parse_date(update.message.text.strip())
         g = geisteszahl(d)
         pfad = ENTWICKLUNGSPFAD.get(g, "")
@@ -707,6 +710,10 @@ async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ---- Vollanalyse при простом вводе даты (Fallback) ----
 async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # если мы ждём дату для конкретного режима (например Pfad) — ничего не делаем
+    if context.user_data.get("mode"):
+        return
+
     text = (update.message.text or "").strip()
     if text.startswith("/"):
         return
@@ -741,11 +748,53 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         )
         await update.message.reply_html(out, reply_markup=more_kb)
     except Exception:
-        # Молча игнорируем, чтобы не мешать другим хендлерам
         pass
 
 
 # ---------------------------- Conversation --------------------------
+# ВАЖНО: при входе в "calc_path" ставим "замок" режима, чтобы фоллбек не перехватывал дату
+async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    data = q.data
+    await q.answer()
+    if data == "calc_full":
+        await q.message.reply_html("🧮 Geben Sie das <b>Geburtsdatum</b> für die Vollanalyse ein (TT.MM.JJJJ):",
+                                   reply_markup=back_menu_kb())
+        return ASK_FULL
+    if data == "calc_day":
+        await q.message.reply_html("Geben Sie Ihr <b>Geburtsdatum</b> ein (TT.MM.JJJJ):",
+                                   reply_markup=back_menu_kb())
+        return ASK_DAY_BIRTH
+    if data == "calc_compat":
+        await q.message.reply_html("Geben Sie <b>Geburtsdatum Person 1</b> ein (TT.MM.JJJJ):",
+                                   reply_markup=back_menu_kb())
+        return ASK_COMPAT_1
+    if data == "calc_name":
+        await q.message.reply_html("Geben Sie den <b>Namen</b> ein (lateinische Schreibweise):",
+                                   reply_markup=back_menu_kb())
+        return ASK_NAME
+    if data == "calc_group":
+        context.user_data["group_birthdays"] = []
+        await q.message.reply_html(
+            "👥 Bitte bis zu 5 Geburtstage eingeben.\n"
+            "• Sie können <b>mehrere</b> in <u>einer</u> Nachricht senden.\n"
+            "• Formate: <code>12.12.1999 13.12.1999</code> oder <code>12 12 1999, 13 12 1999</code> oder pro Zeile.\n"
+            "Wenn fertig, tippen Sie <b>fertig</b>.",
+            reply_markup=back_menu_kb()
+        )
+        return ASK_GROUP
+    if data == "calc_path":
+        # ставим "замок": теперь фоллбек молчит, пока не обработаем дату в ask_path
+        context.user_data["mode"] = "path"
+        await q.message.reply_html(
+            "🧭 <b>Entwicklungspfad</b>\n"
+            "Bitte geben Sie Ihr <b>Geburtsdatum</b> ein (TT.MM.JJJJ). "
+            "Der Pfad wird aus Ihrer <b>Geisteszahl</b> berechnet.",
+            reply_markup=back_menu_kb()
+        )
+        return ASK_PATH
+
+
 conv = ConversationHandler(
     entry_points=[CallbackQueryHandler(on_menu_click, pattern=r"^calc_")],
     states={
@@ -780,17 +829,17 @@ def main():
     # Диалог-меню
     app.add_handler(conv)
 
-    # Callback’и (выше фоллбека)
+    # Callback'и (выше фоллбека)
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$"), group=1)
     app.add_handler(CallbackQueryHandler(read_more_geist, pattern=r"^more_g[1-9]$"), group=1)
 
-    # Фоллбек: если пользователь просто прислал дату
+    # Фоллбек — САМЫЙ ПОСЛЕДНИЙ, в отдельной группе
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback),
         group=2
     )
 
-    print("🤖 KeyToFate läuft. /start → Hauptmenü. Entwicklungspfad и прочие функции активны.")
+    print("🤖 KeyToFate läuft. /start → Hauptmenü. Entwicklungspfad не перехватывается Vollanalyse.")
     app.run_polling()
 
 
