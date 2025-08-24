@@ -24,7 +24,7 @@ DONATE_EMAIL = "manzera@mail.ru"
 PAYPAL_URL = "https://www.paypal.com/donate?business=manzera%40mail.ru"
 ANALYTICS_PATH = "analytics.json"
 RETAIN_DAYS = 90
-ADMIN_IDS = {6480688287}
+ADMIN_IDS = {6480688287}  # укажи здесь свои админ-ID через запятую, если нужно несколько
 
 MEISTER_ERHALTEN = True
 DATE_REGEX = r'^\s*(\d{1,2})[.\s](\d{1,2})[.\s](\d{4})\s*$'
@@ -91,6 +91,7 @@ def geldcode(day: int, month: int, year: int) -> str:
     return f"{d1}{d2}{d3}{d4}"
 
 def tagesenergie(bday_day: int, today_day: int) -> int:
+    # День рождения (например 25) + сегодняшний день (например 23) => 2+5+2+3 => редукция до 1–9
     return reduzieren_1_9(sum(int(d) for d in f"{bday_day:02d}{today_day:02d}"))
 
 # ---------------------- Namensenergie ---------------------
@@ -114,8 +115,8 @@ def namensenergie(text: str) -> int:
     vals = [NAME_MAP[ch] for ch in t.upper() if ch in NAME_MAP]
     return reduzieren(sum(vals)) if vals else 0
 
-# ---------------------- Тексты (коротко, длинные вставишь 
-# КОРОТКИЕ аннотации Geisteszahl 1-9 - из первых предложений книги.
+# ---------------------- Тексты (короткие; длинные вставь сам) ----------------------
+# КОРОТКИЕ аннотации Geisteszahl 1-9 -из первых предложений книги.
 GEISTES_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
  
@@ -146,7 +147,7 @@ Sie sind in diese Welt gekommen, um alles zu kontrollieren — Management, Erfol
 In Ihnen ist die Energie des Dienens und der Vollendung angelegt. Mitgefühl, Gerechtigkeit und Blick aufs Ganze leiten Ihre Schritte.""",
 }
 
-# ПОЛНЫЕ тексты Geisteszahl 1-9 - буквально из книги (кнопка «Mehr lesen»)
+# ПОЛНЫЕ тексты Geisteszahl 1-9 -буквально из книги (кнопка «Mehr lesen»)
 GEISTES_FULL_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
 
@@ -324,7 +325,7 @@ TAG_TXT = {
 ** – Abschluss, Dienst und Großzügigkeit: bringen Sie Dinge zu Ende und schaffen Sie Raum für Neues. ...""",
 }
 
-# Partnerschaft (общая цифра пары 1–9)
+# Partnerschaft (общая цифра пары 1-9)
 PARTNERSCHAFT_TXT = {
     1: ("💞 Partnerschaft 1\n\n"
         "Zwei Führungsenergien bringen Funken, Tempo und große Schaffenskraft. "
@@ -399,13 +400,7 @@ ZU_VERMEIDEN = {
 }
 
 # ----------------------------- DONATE UI ------------------------------
-DONATE_TEXT = (
-    "\n\n🙏 <b>Unterstützen Sie KeyToFate</b>\n"
-    "Wenn Ihnen dieses Projekt gefällt, können Sie es mit einer Spende unterstützen.\n"
-    f"PayPal: <b>{html_escape(DONATE_EMAIL)}</b>\n"
-    "<i>Vielen Dank für Ihre Hilfe!</i>"
-)
-
+# Текст доната мы НЕ показываем в ответах — только кнопка в главном меню
 def donate_keyboard(extra_rows: List[List[InlineKeyboardButton]] | None = None,
                    show_stats_button: bool = False) -> InlineKeyboardMarkup:
     rows: List[List[InlineKeyboardButton]] = []
@@ -418,12 +413,22 @@ def donate_keyboard(extra_rows: List[List[InlineKeyboardButton]] | None = None,
     return InlineKeyboardMarkup(rows)
 
 def back_menu_kb() -> InlineKeyboardMarkup:
-    # простая кнопка «Назад», без доната (донат есть почти во всех ответах)
+    # простая кнопка «Назад»
     return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Zurück zum Menü", callback_data="back_menu")]])
+
+def main_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🧮 Vollanalyse",     callback_data="calc_full")],
+        [InlineKeyboardButton("🔆 Tagesenergie",    callback_data="calc_day")],
+        [InlineKeyboardButton("💞 Partnerschaft",   callback_data="calc_compat")],
+        [InlineKeyboardButton("🔤 Namensenergie",   callback_data="calc_name")],
+        [InlineKeyboardButton("👥 Kollektivenergie",callback_data="calc_group")],
+        [InlineKeyboardButton("🧭 Entwicklungspfad",callback_data="calc_path")],
+    ])
 
 def menu_with_donate_keyboard(is_admin_user: bool) -> InlineKeyboardMarkup:
     """Главное меню + донат в самом низу (и статистика для админа)."""
-    base = main_menu().inline_keyboard[:]  # кнопки меню
+    base = main_menu().inline_keyboard[:]  # базовые кнопки меню
     extra = [[InlineKeyboardButton("💖 Spende (PayPal)", url=PAYPAL_URL)]]
     if is_admin_user:
         extra.append([InlineKeyboardButton("📊 Statistik", callback_data="show_stats")])
@@ -553,18 +558,8 @@ def export_csv_files() -> List[tuple[str, bytes]]:
     f2 = ("analytics_users.csv", buf2.getvalue().encode("utf-8"))
     return [f1, f2]
 
-# ----------------------------- Меню ------------------------------
+# ----------------------------- Меню/диалоги ------------------------------
 ASK_DAY_BIRTH, ASK_COMPAT_1, ASK_COMPAT_2, ASK_NAME, ASK_GROUP, ASK_FULL, ASK_PATH = range(7)
-
-def main_menu() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🧮 Vollanalyse",     callback_data="calc_full")],
-        [InlineKeyboardButton("🔆 Tagesenergie",    callback_data="calc_day")],
-        [InlineKeyboardButton("💞 Partnerschaft",   callback_data="calc_compat")],
-        [InlineKeyboardButton("🔤 Namensenergie",   callback_data="calc_name")],
-        [InlineKeyboardButton("👥 Kollektivenergie",callback_data="calc_group")],
-        [InlineKeyboardButton("🧭 Entwicklungspfad",callback_data="calc_path")],
-    ])
 
 WELCOME = (
     "🌟 <b>Liebe Freunde!</b>\n\n"
@@ -572,8 +567,7 @@ WELCOME = (
     "Es hilft, Ihr wahres Potenzial zu entfalten und Harmonie mit sich und der Welt zu finden.\n\n"
     "Ihr Geburtsdatum birgt erstaunliche Erkenntnisse über Persönlichkeit und Bestimmung. "
     "Wer diese Gesetze versteht, entfaltet Talente und findet den eigenen Weg.\n\n"
-    "✨ Lüften Sie den Schleier Ihres Schicksals – und lassen Sie KeyToFate Ihr Wegweiser zum Glück sein. ✨\n\n"
-    "➡️ Wählen Sie unten, um Ihre Reise zu beginnen:"
+    "✨ Lüften Sie den Schleier Ihres Schicksals – und lassen Sie KeyToFate Ihr Wegweiser zum Glück sein. ✨"
 )
 MENU_HEADER = "🔽 <b>Hauptmenü</b>\nBitte wählen Sie:"
 
@@ -650,8 +644,11 @@ async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
         e = ergebniszahl(g, h, v)
         geld = geldcode(d, m, y)
 
-        extra = [[InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")]]
-        kb = donate_keyboard(extra_rows=extra, show_stats_button=is_admin(update))
+        # кнопки: Mehr lesen + Назад (без доната)
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")],
+            [InlineKeyboardButton("⬅️ Zurück zum Menü", callback_data="back_menu")]
+        ])
 
         day_text = DAY_BIRTH_TXT.get(d, "").strip()
         day_block = f"📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}\n\n" if day_text else ""
@@ -667,7 +664,6 @@ async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📘 <b>Ergebniszahl:</b> {e}\n"
             f"{['Reife Führung','Echte Kooperation','Ausdruck & Wissen','Struktur & Vollendung','Freiheit in Bewusstheit','Liebe mit Weisheit','Transformation & Tiefe','Gerechter Erfolg','Dienst & Großzügigkeit'][(e-1)%9]}\n\n"
             f"💰 <b>Geldcode:</b> <code>{geld}</code>"
-            + DONATE_TEXT
         )
         await update.message.reply_html(out, reply_markup=kb)
         return ConversationHandler.END
@@ -687,13 +683,12 @@ async def read_more_geist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         full = GEISTES_FULL_TXT.get(g)
         if not full:
             await q.message.reply_html("Für diese Zahl liegt kein erweiterter Text vor.",
-                                       reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+                                       reply_markup=back_menu_kb())
             return
-        await q.message.reply_html(f"📖 <b>Geisteszahl {g}</b>\n\n{html_escape(full.strip())}" + DONATE_TEXT,
-                                   reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+        await q.message.reply_html(f"📖 <b>Geisteszahl {g}</b>\n\n{html_escape(full.strip())}",
+                                   reply_markup=back_menu_kb())
     except Exception as e:
-        await q.message.reply_html(f"❌ {html_escape(str(e))}",
-                                   reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+        await q.message.reply_html(f"❌ {html_escape(str(e))}", reply_markup=back_menu_kb())
 
 # ---- Tagesenergie ----
 async def ask_day_birth(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -706,9 +701,8 @@ async def ask_day_birth(update: Update, context: ContextTypes.DEFAULT_TYPE):
         out = (
             f"📅 <b>Tagesenergie für {today.day:02d}.{today.month:02d}.{today.year}:</b>\n\n"
             f"{html_escape(body.strip())}"
-            + DONATE_TEXT
         )
-        await update.message.reply_html(out, reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+        await update.message.reply_html(out, reply_markup=back_menu_kb())
         return ConversationHandler.END
     except Exception as ex:
         await update.message.reply_html(f"❌ {html_escape(str(ex))}\nVersuchen Sie erneut (TT.MM.JJJJ):",
@@ -750,9 +744,8 @@ async def ask_compat2(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"<b>Person 1:</b> {html_escape(s1)} → Geisteszahl {g1}\n"
             f"<b>Person 2:</b> {html_escape(update.message.text.strip())} → Geisteszahl {g2}\n\n"
             f"{PARTNERSCHAFT_TXT.get(common,'Eine interessante Verbindung mit Entwicklungspotenzial.')}"
-            + DONATE_TEXT
         )
-        await update.message.reply_html(text, reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+        await update.message.reply_html(text, reply_markup=back_menu_kb())
         context.user_data.pop("compat1", None)
         return ConversationHandler.END
     except Exception as ex:
@@ -779,9 +772,8 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     beschreibung = NAMENS_TXT.get(val, "Keine Beschreibung gefunden.")
     await update.message.reply_html(
         f"🔤 <b>Namensenergie</b> „{html_escape(name)}“: <b>{val}</b>\n\n"
-        f"{beschreibung}"
-        + DONATE_TEXT,
-        reply_markup=donate_keyboard(show_stats_button=is_admin(update))
+        f"{beschreibung}",
+        reply_markup=back_menu_kb()
     )
     return ConversationHandler.END
 
@@ -815,9 +807,8 @@ async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{KOLLEKTIV_TXT.get(kollektiv,'Dieses Kollektiv entfaltet eine besondere Dynamik und Lernaufgabe.')}\n\n"
             + (f"🧭 <b>Entwicklungspfad (Kollektiv):</b> {pfad_txt}\n" if pfad_txt else "") +
             (f"⚠️ <b>Zu vermeiden:</b> {avoid_txt}\n" if avoid_txt else "")
-            + DONATE_TEXT
         )
-        await update.message.reply_html(out, reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+        await update.message.reply_html(out, reply_markup=back_menu_kb())
         return ConversationHandler.END
 
     try:
@@ -874,9 +865,8 @@ async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🧭 <b>Entwicklungspfad (aus Geisteszahl {g})</b>\n\n"
             f"{pfad}\n\n"
             + (f"⚠️ <b>Zu vermeiden:</b> {avoid}" if avoid else "")
-            + DONATE_TEXT
         )
-        await update.message.reply_html(out, reply_markup=donate_keyboard(show_stats_button=is_admin(update)))
+        await update.message.reply_html(out, reply_markup=back_menu_kb())
         return ConversationHandler.END
     except Exception as ex:
         await update.message.reply_html(
@@ -902,8 +892,10 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         day_text = DAY_BIRTH_TXT.get(d, "").strip()
         day_block = f"📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}\n\n" if day_text else ""
 
-        extra = [[InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")]]
-        kb = donate_keyboard(extra_rows=extra, show_stats_button=is_admin(update))
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")],
+            [InlineKeyboardButton("⬅️ Zurück zum Menü", callback_data="back_menu")]
+        ])
 
         out = (
             f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>\n\n"
@@ -916,7 +908,6 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
             f"📘 <b>Ergebniszahl:</b> {e}\n"
             f"{['Reife Führung','Echte Kooperation','Ausdruck & Wissen','Struktur & Vollendung','Freiheit in Bewusstheit','Liebe mit Weisheit','Transformation & Tiefe','Gerechter Erfolg','Dienst & Großzügigkeit'][(e-1)%9]}\n\n"
             f"💰 <b>Geldcode:</b> <code>{geld}</code>"
-            + DONATE_TEXT
         )
         await update.message.reply_html(out, reply_markup=kb)
     except Exception:
@@ -992,7 +983,7 @@ def main():
     # Фоллбек: если просто прислали дату — Vollanalyse
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback))
 
-    print("🤖 KeyToFate läuft. /start oder /menu → Hauptmenü. /stats und /export_stats nur für Admin.")
+    print("🤖 KeyToFate läuft. /start → приветствие → ➡️ Zum Menü. В главном меню есть донат. /stats и /export_stats — только для админа.")
     app.run_polling()
 
 if __name__ == "__main__":
