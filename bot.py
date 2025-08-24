@@ -115,7 +115,7 @@ def namensenergie(text: str) -> int:
     return reduzieren(sum(vals)) if vals else 0
 
 # ---------------------- Тексты (коротко, длинные вставишь 
-КОРОТКИЕ аннотации Geisteszahl 1–9 — из первых предложений книги.
+КОРОТКИЕ аннотации Geisteszahl 1-9 — из первых предложений книги.
 GEISTES_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
  
@@ -146,7 +146,7 @@ Sie sind in diese Welt gekommen, um alles zu kontrollieren — Management, Erfol
 In Ihnen ist die Energie des Dienens und der Vollendung angelegt. Mitgefühl, Gerechtigkeit und Blick aufs Ganze leiten Ihre Schritte.""",
 }
 
-# ПОЛНЫЕ тексты Geisteszahl 1–9 — буквально из книги (кнопка «Mehr lesen»)
+# ПОЛНЫЕ тексты Geisteszahl 1-9 - буквально из книги (кнопка «Mehr lesen»)
 GEISTES_FULL_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
 
@@ -293,7 +293,7 @@ Oft faulenzen Menschen, die am 30. geboren sind, bei ihrer Selbstbildung und sin
 Menschen, die an diesem Tag geboren sind, haben eine globale Bestimmung, die manchmal schwer zu begreifen und zu erkennen ist. Mit Hilfe Ihres Intellekts und Ihrer Führungsqualitäten müssen Sie globale und kreative Projekte erschaffen. Doch Ihr Bewusstsein sollte dabei auf Liebe und Dienst an den Menschen ausgerichtet sein. Nur in diesem Fall können sich Ihre genialen Ideen wirklich verwirklichen und der ganzen Welt großen Nutzen bringen.""" 
 }
 
-# Tagesenergie 1–9 — буквально из книги
+# Tagesenergie 1-9 - буквально из книги
 TAG_TXT = {
     1: """📅 Tagesenergie 1
 
@@ -352,7 +352,7 @@ PARTNERSCHAFT_TXT = {
         "Reif, sinnstiftend, überpersönlich. Klare Grenzen, Balance Geben/Empfangen."),
 }
 
-# Kollektivenergie (общая цифра группы 1–9)
+# Kollektivenergie (общая цифра группы 1-9)
 KOLLEKTIV_TXT = {
     1: ("👥 Kollektivenergie 1\n\n"
         "Initiativen, starke Persönlichkeiten, Führung. Gemeinsame Vision bündeln, Rollen klären."),
