@@ -791,8 +791,7 @@ app.add_handler(CallbackQueryHandler(show_stats_callback, pattern=r"^show_stats$
 app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback),
     group=2
- 
-    )
+ )
     app.add_handler(conv)
 
     # Фоллбек: если просто прислали дату — Vollanalyse
