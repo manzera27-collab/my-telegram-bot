@@ -1,3 +1,4 @@
+git status
 from __future__ import annotations
 
 import csv
