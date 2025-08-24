@@ -743,62 +743,33 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
     except Exception:
         pass
 
-# ---------------------------- Bootstrap --------------------------conv = ConversationHandler(
-    entry_points=[CallbackQueryHandler(on_menu_click, pattern="^calc_")],
-    states={
-        ASK_FULL:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_full),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-        ASK_DAY_BIRTH:[MessageHandler(filters.TEXT & ~filters.COMMAND, ask_day_birth),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-        ASK_COMPAT_1: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_compat1),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-        ASK_COMPAT_2: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_compat2),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-        ASK_NAME:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-        ASK_GROUP:    [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_group),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-        ASK_PATH:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_path),
-                       CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
-    },
-    fallbacks=[CommandHandler("menu", menu_cmd)],
-    allow_reentry=True,
-    per_message=True,   # <<< добавили эту строку
-)
+# ---------------------------- Bootstrap --------------------------
+# ConversationHandler мы уже создали выше (conv = ConversationHandler(...))
 
 def main():
     app = Application.builder().token(API_TOKEN).build()
 
-# Команды
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("menu", menu_cmd))
-app.add_handler(CommandHandler("stats", stats_cmd))
-app.add_handler(CommandHandler("export_stats", export_stats_cmd))
+    # Команды
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("menu", menu_cmd))
 
-# Кнопка «Zum Menü» после /start
-app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^open_menu$"))
-
-# Диалог-меню (ConversationHandler)
-app.add_handler(conv)
-
-# Глобальные callback’и — ставим в group=1, чтобы они опередили фоллбек
-app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_menu$"), group=1)
-app.add_handler(CallbackQueryHandler(read_more_geist, pattern=r"^more_g[1-9]$"), group=1)
-app.add_handler(CallbackQueryHandler(show_stats_callback, pattern=r"^show_stats$"), group=1)
-
-# Глобальный фоллбек — САМЫМ ПОСЛЕДНИМ и в group=2,
-# чтобы не перехватывал текст для «🧭 Entwicklungspfad»
-app.add_handler(
-    MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback),
-    group=2
- )
+    # Диалог-меню
     app.add_handler(conv)
 
-    # Фоллбек: если просто прислали дату — Vollanalyse
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback))
+    # Глобальные callback’и — пусть обрабатываются до фоллбека
+    app.add_handler(CallbackQueryHandler(back_to_menu, pattern=r"^back_menu$"), group=1)
+    app.add_handler(CallbackQueryHandler(read_more_geist, pattern=r"^more_g[1-9]$"), group=1)
 
-    print("🤖 KeyToFate läuft. /start oder /menu → Hauptmenü. Vollanalyse berücksichtigt nun den exakten Geburtstag (1–31).")
+    # Фоллбек на «просто дату» — САМЫЙ ПОСЛЕДНИЙ и в отдельной группе,
+    # чтобы не перехватывал ввод для состояний (например Entwicklungspfad)
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback),
+        group=2
+    )
+
+    print("🤖 KeyToFate läuft. /start → Hauptmenü. Buttons reagieren, Pfad/Analyse funktionieren.")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
