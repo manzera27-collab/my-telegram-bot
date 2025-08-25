@@ -16,7 +16,11 @@ from telegram.ext import (
 )
 
 # ========================= ПРОБНАЯ ВЕРСИЯ =========================
-API_TOKEN = '8307912076:AAG6neSMpuFIVFmTY0Pi-rHco66Tqn94uwo'
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+API_TOKEN = os.getenv("API_TOKEN")
 # ================================================================
 
 # ---------- DONATE & ANALYTICS ----------
