@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import csv
-import io
-import json
 import re
+import os
+import json
+import io
+import csv
 from datetime import datetime, timedelta, date
 from typing import Tuple, List, Dict
 
@@ -14,11 +15,10 @@ from telegram.ext import (
     Application, CommandHandler, ContextTypes, MessageHandler,
     CallbackQueryHandler, ConversationHandler, filters
 )
-
-# ========================= ПРОБНАЯ ВЕРСИЯ =========================
 from dotenv import load_dotenv
-import os
 
+# ========================= API TOKEN =========================
+# Загружаем переменные окружения из .env (локально) или Railway
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 # ================================================================
@@ -123,11 +123,10 @@ def namensenergie(text: str) -> int:
     vals = [NAME_MAP[ch] for ch in t.upper() if ch in NAME_MAP]
     return reduzieren(sum(vals)) if vals else 0
 
-# ---------------------- Тексты (коротко; длинные вставишь 
-# КОРОТКИЕ аннотации Geisteszahl 1-9 - из первых предложений книги.
+# ---------------------- Тексты (коротко; длинные вставишь) ----------------------
 GEISTES_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
- 
+
 Sie sind ein geborener Anführer, eine sehr starke Person mit großem Willen. Sie handeln schnell, lieben es, Verantwortung zu übernehmen und neue Wege zu eröffnen.""",
     2: """(Menschen, geboren am 2., 11., 20., 29. eines Monats):
 
@@ -155,7 +154,6 @@ Sie sind in diese Welt gekommen, um alles zu kontrollieren — Management, Erfol
 In Ihnen ist die Energie des Dienens und der Vollendung angelegt. Mitgefühl, Gerechtigkeit und Blick aufs Ganze leiten Ihre Schritte.""",
 }
 
-# ПОЛНЫЕ тексты Geisteszahl 1- 9 - буквально из книги (кнопка «Mehr lesen»)
 GEISTES_FULL_TXT = {
     1: """(Menschen, geboren am 1., 10., 19., 28. eines Monats):
 
@@ -186,10 +184,7 @@ Sie sind in diese Welt gekommen, um alles zu kontrollieren. ...""",
 Dienst, Hilfe für andere und das Erlangen maximaler Weisheit. ...""",
 }
 
-# --- НОВОЕ: Точечные описания по конкретному дню рождения (1..31) ---
-# Заполни позже буквальным текстом (сейчас — короткие заглушки).
-from typing import Dict
-
+# --- Точечные описания по конкретному дню рождения (1..31) ---
 DAY_BIRTH_TXT: Dict[int, str] = {
     1: """Bedeutung des Geburtstages 1 Sie besitzen ein absolut reines Bewusstsein, eine junge Seele. Sie haben wenige Zweifel, aber viel Entschlossenheit, zu handeln und voranzugehen. Nutzen Sie unbedingt Ihr Führungspotential!
 Manchmal leiden Menschen, die am 1. Tag geboren sind, unter Pessimismus oder sie sind von anderen enttäuscht. Dies geschieht, weil nicht alle in ihrer Umgebung bereit sind, sich mit ihrer „führenden“ Meinung abzufinden.
@@ -234,26 +229,26 @@ Doch oft leiden Menschen mit zwei Einsen unter dem Wunsch, Beziehungen aufzubaue
     12: """Bedeutung des Geburtstages 12 Sie teilen die Welt in Dumme und Kluge ein und sind überzeugt, dass Sie viel mehr wissen als andere. Das hindert Sie daran, andere Menschen zu verstehen, was zu Konflikten und Streitigkeiten führt.
 Befindet sich Ihr Bewusstsein im Positiven, können Sie ein hervorragender Manager werden, der durch Verständnis handelt.
 Für Menschen, die am 12. Tag geboren sind, erweist sich dies oft als zu schmerzhaft und „krisenhaft“, was ihre Kommunikation mit anderen Menschen erschwert. Sie müssen Ihre Fähigkeiten zur Empathie und zum Verständnis anderer entwickeln, um nicht ins Negative abzurutschen.
-Sie sollen ein Leitstern für andere Menschen werden, dabei aber ein einfühlsamer und verständnisvoller Freund für alle bleiben. Das ist möglich durch die Analyse Ihrer eigenen Absichten und die Entwicklung von Kommunikationsfähigkeiten, wobei Ihr Bewusstsein stets auf Hilfe und Dienst am Menschen ausgerichtet sein sollte.""",
+Sie sollen ein Leitstern für andere Menschen werden, dabei aber ein einfühlsamer und verständnisvoller Freund для всех bleiben. Das ist möglich durch die Analyse Ihrer eigenen Absichten und die Entwicklung von Kommunikationsfähigkeiten, wobei Ihr Bewusstsein stets на Hilfe und Dienst am Menschen ausgerichtet sein sollte.""",
 
     13: """Bedeutung des Geburtstages 13 Ihr häufigster Satz lautet: „Ich weiß!“ Sie wollen andere Menschen nicht anhören oder verstehen, weil Sie sich für den Klügsten halten. Gleichzeitig kann Ihr Bewusstsein unter ständiger Unzufriedenheit mit sich selbst und anderen Menschen leiden.
 Entwickeln Sie Ihr Verständnis: Hören Sie anderen Menschen mehr zu und beraten Sie sich mit ihnen in wichtigen Fragen. Bemühen Sie sich, keine kritischen Urteile über andere zu fällen, bevor Sie die Situation vollständig verstanden haben.
 Sie müssen lernen, Liebe und Fürsorge gegenüber anderen Menschen zu zeigen. Selbst wenn es Ihnen so vorkommt, dass Ihr Herz enttäuscht ist und andere Menschen Ihrer Liebe nicht würdig sind, werden Sie wahres Glück erfahren, wenn Sie in die positive Phase der Kreativität und der Liebe übergehen.""",
 
-    14: """Bedeutung des Geburtstages 14 Sie sind ein autonomer Mensch, der in der Lage ist, selbst Initiative zu ergreifen und Neues zu schaffen und das eigene Produkt zu erweitern. Sie sind ein sehr effektiver Mensch, solange Sie nicht anfangen, sich über andere Menschen zu ärgern. Wir empfehlen Ihnen, aus dem Zustand der emotionalen Zerstörung herauszukommen, indem Sie positives Denken entwickeln.
-Für Sie ist es wichtig, Anerkennung für Ihre Bemühungen zu erhalten und ständig positive Bestätigung für Ihre Handlungen zu finden. Am besten verwirklichen Sie sich in kreativen Bereichen. Um Ihren mentalen Zustand zu verbessern, wird Ihnen empfohlen, viel Zeit für Sport und körperliche Disziplin aufzuwenden, da diese Praktiken Ihren Geist schnell in einen Zustand der Genialität und Inspiration versetzen. Wenn Sie Ihrem Körper keine Aufmerksamkeit schenken, werden Sie häufiger auf Trübsinn, Enttäuschungen und emotionale Zusammenbrüche in Ihrem Leben stoßen.""",
+    14: """Bedeutung des Geburtstages 14 Sie sind ein автономer Mensch, der in der Lage ist, selbst Initiative zu ergreifen und Neues zu schaffen und das eigene Produkt zu erweitern. Sie sind ein sehr effektiver Mensch, solange Sie nicht anfangen, sich über andere Menschen zu ärgern. Wir empfehlen Ihnen, aus dem Zustand der emotionalen Zerstörung herauszukommen, indem Sie позитивное Denken entwickeln.
+Für Sie ist es wichtig, Anerkennung für Ihre Bemühungen zu erhalten und постоянно positive Bestätigung für Ihre Handlungen zu finden. Am besten verwirklichen Sie sich в kreativen Bereichen. Um Ihren mentalen Zustand zu verbessern, wird Ihnen empfohlen, viel Zeit für Sport и körperliche Disziplin aufzuwenden, da diese Praktiken Ihren Geist schnell в einen Zustand der Genialität und Inspiration versetzen. Wenn Sie Ihrem Körper keine Aufmerksamkeit schenken, werden Sie häufiger auf Trübsinn, Enttäuschungen und emotionale Zusammenbrüche in Ihrem Leben stoßen.""",
 
-    15: """Bedeutung des Geburtstages 15 Sie erreichen Ihre Ziele durch Initiative und Kommunikation. Sie können sehr hohe Ergebnisse im Business erzielen, indem Sie Ihre Weisheit nutzen und Angemessenheit. Ihre Schwäche ist die Neigung zu Verletzungen und übermäßigem Egoismus. Entwickeln Sie Verständnis für andere Menschen und bauen Sie effektive Kommunikation auf.
+    15: """Bedeutung des Geburtstages 15 Sie erreichen Ihre Ziele durch Initiative und Kommunikation. Sie können sehr hohe Ergebnisse им Business erzielen, indem Sie Ihre Weisheit nutzen und Angemessenheit. Ihre Schwäche ist die Neigung zu Verletzungen und übermäßigem Egoismus. Entwickeln Sie Verständnis für andere Menschen und bauen Sie effektive Kommunikation auf.
 Sie können ein hervorragender Manager und Unternehmer werden, weil Sie in der Lage sind, mit verschiedenen Menschen eine gemeinsame Basis zu finden. Gleichzeitig besitzen Sie ein hohes Maß an Initiative. Probleme können entstehen, wenn Sie sich von augenblicklichen Begierden leiten lassen. Die Energie der Geisteszahl 6 prüft Sie ständig auf Ihre Beständigkeit gegenüber Versuchungen, daher müssen Sie in Reinheit bleiben, um Ihren Erfolg zu bewahren.""",
 
     16: """Bedeutung des Geburtstages 16 Die wichtigste Aufgabe für Sie ist es, zu lernen, Ihre Angelegenheiten durch Disziplin zu kontrollieren und nicht in die ständige Suche nach Vergnügungen abzugleiten. Das Leben wird Ihnen Liebe, Geld und Wohlstand schenken, wenn Sie alle Ihre Angelegenheiten in Ordnung bringen und lernen, Ihre Zeit zu kontrollieren.
 Geborene am 16. geboren sind, wird die Energie ihres Bewusstseins immer durch Versuchungen und schädliche Neigungen prüfen. Jede Askese stärkt Sie, aber Sie müssen Willenskraft und Unverwundbarkeit gegenüber Ihren eigenen Wünschen entwickeln. Auch ist es sehr wichtig für Sie, zu lernen, jeden Ihrer Tage zu planen, langfristige Ziele zu setzen und alle Ihre Angelegenheiten zu Ende zu bringen. Dies wird Ihre Persönlichkeit stärker und größer machen.""",
 
     17: """Bedeutung des Geburtstages 17 Der beste Weg zur Verwirklichung für Sie ist die Bühne oder das Showbusiness. Sie sind in der Lage, sehr viel zu arbeiten, und dabei sucht Ihr Ego nach Anerkennung. Je tiefer Sie in den Prozess eintauchen, desto mehr Ruhm, Geld und Möglichkeiten werden Sie täglich erhalten.
-Regelmäßiger Sport und die richtige Zielsetzung machen Sie stärker. Ihre chaotische Energie konzentriert sich, wodurch Sie Ergebnisse schneller erreichen. Hüten Sie sich vor extremem Verhalten (schnelles Fahren, Bewusstseinsveränderung), denn Ihre starke Energie kann Krisen in Ihrem Leben verursachen. Es ist wichtig, das Thema Beziehungen und Partnerschaft zu bearbeiten, denn Ihre Energie verwirklicht sich in der gemeinsamen Arbeit mit anderen Menschen.""",
+Regelmäßiger Sport und die richtige Zielsetzung machen Sie stärker. Ihre chaotische Energie konzentriert sich, wodurch Sie Ergebnisse schneller erreichen. Hüten Sie sich vor extremem Verhalten (schnelles Fahren, Bewusstseinsveränderung), denn Ihre starke Energie kann Krisen in Ihrem Leben verursachen. Es ist wichtig, das Thema Beziehungen и Partnerschaft zu bearbeiten, denn Ihre Energie verwirklicht sich in der gemeinsamen Arbeit mit anderen Menschen.""",
 
     18: """Bedeutung des Geburtstages 18 Obwohl Sie ein sehr fleißiger Mensch sind (und oft ein Einzelgänger), müssen Sie lernen, sich Ziele zu setzen und Energie durch Sport zu generieren, damit all Ihre Handlungen sinnvoll sind und Sie zum Ergebnis führen. Nutzen Sie Ihre hohe Arbeitsfähigkeit mit Verstand und beschäftigen Sie sich nicht mit überflüssigen Dingen.
-Als ausgezeichneter Helfer und sehr produktiver Mensch streben Sie danach, alles selbst zu machen. Ihre wahre Aufgabe ist es, zu lernen, durch Partnerschaft zu arbeiten und überhaupt das Thema Beziehungen in Ihrem Leben zu bearbeiten. Nur durch Beziehungen und Teamarbeit wachsen Sie wirklich und erreichen hohe Ergebnisse.""",
+Als ausgezeichneter Helfer und sehr produktiver Mensch streben Sie danach, alles selbst zu machen. Ihre wahre Aufgabe ist es, zu lernen, durch Partnerschaft zu arbeiten und überhaupt das Thema Beziehungen in Ihrem Leben zu bearbeiten. Nur durch Beziehungen и Teamarbeit wachsen Sie wirklich und erreichen hohe Ergebnisse.""",
 
     19: """Bedeutung des Geburtstages 19 Sie sind ein feuriger Führer. In Ihrem Bewusstsein sind die stärksten Führungsqualitäten ausgeprägt. Sie sind fähig, Unglaubliches zu erschaffen, haben jedoch auch eine Neigung zur Zerstörung. Es ist für Sie unbedingt notwendig, sich durch Hilfe für andere zu verwirklichen und Ihr Ziel unbeirrt zu verfolgen.
 Um aus einem Zustand der Streitlust herauszukommen, wird Ihnen empfohlen, sich ständig mit neuen Dingen zu beschäftigen. Lernen macht Ihre Energie harmonischer und nimmt Ihnen jene Naivität, die durch die Energie der Zahl 9 entsteht.
@@ -264,45 +259,45 @@ Ihr Bewusstsein driftet sehr oft ins Negative ab, wenn Sie aufhören, Ihren Part
 Im positiven Zustand können Sie ein sehr energiereicher Mensch mit offenem Herzen sein. In diesem Fall sind Sie bereit, an Ihren Beziehungen zu arbeiten und mehr Kraft in deren Stärkung zu investieren.
 Wenn Sie Ihre Kommunikationsfähigkeiten entwickeln und lernen, die Prozesse, mit denen Sie sich beschäftigen, im Detail zu verstehen, werden Sie zum besten Umsetzer. Gleichzeitig ist es für Sie wichtig, sich in jeder Aufgabe in Partnerschaft mit anderen Menschen weiterzuentwickeln.""",
 
-    21: """Bedeutung des Geburtstages 21 Obwohl Sie ein Mensch des Wissens sind, neigen Sie dazu, Ihre Fähigkeiten und Möglichkeiten zu unterschätzen und die Verantwortung auf andere Menschen – auf Mentoren – zu übertragen. Gleichzeitig haben Sie ein inneres Verständnis davon, was Sie erreichen möchten, handeln jedoch über andere, indem Sie diese durch Ihr Wissen beeinflussen.
+    21: """Bedeutung des Geburtstages 21 Obwohl Sie ein Mensch des Wissens sind, neigen Sie dazu, Ihre Fähigkeiten und Möglichkeiten zu unterschätzen und die Verantwortung auf andere Menschen – на Mentoren – zu übertragen. Gleichzeitig haben Sie ein inneres Verständnis davon, was Sie erreichen möchten, handeln jedoch über andere, indem Sie diese durch Ihr Wissen beeinflussen.
 Entwickeln Sie Zielstrebigkeit und lernen Sie, Verantwortung selbst zu übernehmen – unter Berücksichtigung Ihres Wissens über die Welt.
-Sie sind ein einfühlsamer und sanfter Mensch, für den das Thema Beziehungen von großer Bedeutung ist. Wenn Ihre Beziehungen in Ordnung sind, fühlen auch Sie sich wohl. Sie sind ausdauernder und lernfähiger, was ebenfalls ein wichtiger Wachstumspunkt für Sie ist.
-Durch Ihre sanfte und gütige Energie sind Sie in der Lage, Menschen richtig anzuleiten und ihnen mit Ihrem Wissen zu helfen.""",
+Sie sind ein einfühlsamer и sanfter Mensch, für den das Thema Beziehungen von großer Bedeutung ist. Wenn Ihre Beziehungen в Ordnung sind, fühlen auch Sie sich wohl. Sie sind ausdauernder и lernfähiger, was ebenfalls ein wichtiger Wachstumspunkt für Sie ist.
+Durch Ihre sanfte и gütige Energie sind Sie in der Lage, Menschen richtig anzuleiten und ihnen mit Ihrem Wissen zu helfen.""",
 
     22: """Bedeutung des Geburtstages 22 Ihr Bewusstsein strebt ständig danach, Neues zu erschaffen, doch Sie führen begonnene Aufgaben oft nicht zu Ende. Sie neigen dazu, Verantwortung auf andere Menschen abzuwälzen.
 Ihre optimale Verwirklichung liegt in Beziehungen. Wenn Sie Ihren Partner vollständig verstehen, können Sie ein hervorragender Helfer und Diplomat sein – vorausgesetzt, Sie verlassen den negativen Geisteszustand.
-Oft werden Menschen mit diesem Geburtsdatum zu den besten Psychologen und Unterstützern in schwierigen Angelegenheiten. Ihre fleißige Energie ist in der Lage, die kreativsten Lösungen zu finden, insbesondere in Bereichen, die mit Beziehungen zu tun haben.""",
+Oft werden Menschen mit diesem Geburtsdatum zu den besten Psychologen und Unterstützern in schwierigen Angelegenheiten. Ihre fleißige Energie ist in der Lage, die kreativsten Lösungen zu finden, insbesondere в Bereichen, die mit Beziehungen zu tun haben.""",
 
-    23: """Bedeutung des Geburtstages 23 Sie verwirklichen sich hervorragend im Bereich Finanzen und Management. Durch ein tiefes Verständnis von Prozessen können Sie auch wichtiges Wissen über Business und Beziehungen an andere Menschen weitergeben und so Ihre Kommunikation entwickeln. Denken Sie daran, dass Ihnen in allen Angelegenheiten Glück beschieden ist, wenn Ihr Geist positiv und diszipliniert ist.
-Indem Sie anderen Menschen Hilfe und Fürsorge entgegenbringen, verwirklichen Sie Ihre Energie optimal. Sie können der beste Mitarbeiter und Lehrer sein. Ihre Angemessenheit und kühle Berechnung helfen dabei, komplexe Aufgaben zu lösen, die einen klaren Verstand erfordern. Die Kehrseite dieser Energie ist Empfindsamkeit (aufgrund ständiger Zweifel) und List. Indem Sie Wärme und Hilfsbereitschaft gegenüber anderen Menschen zeigen, wachsen Sie als Persönlichkeit.""",
+    23: """Bedeutung des Geburtstages 23 Sie verwirklichen sich hervorragend im Bereich Finanzen und Management. Durch ein tiefes Verständnis von Prozessen können Sie auch wichtiges Wissen über Business und Beziehungen an andere Menschen weitergeben и so Ihre Kommunikation entwickeln. Denken Sie daran, dass Ihnen в allen Angelegenheiten Glück beschieden ist, если Ihr Geist positiv und diszipliniert ist.
+Indem Sie anderen Menschen Hilfe und Fürsorge entgegenbringen, verwirklichen Sie Ihre Energie optimal. Sie können der beste Mitarbeiter und Lehrer sein. Ihre Angemessenheit и kühle Berechnung helfen dabei, komplexe Aufgaben zu lösen, die einen klaren Verstand erfordern. Die Kehrseite dieser Energie ist Empfindsamkeit (aufgrund ständiger Zweifel) und List. Indem Sie Wärme und Hilfsbereitschaft gegenüber anderen Menschen zeigen, wachsen Sie als Persönlichkeit.""",
 
-    24: """Bedeutung des Geburtstages 24 Durch ein tiefes Verständnis der Prozesse und den Drang, Neues zu schaffen, sind Sie in der Lage, ein Produkt zu erschaffen, das die Welt verändern wird. Es ist wichtig, sich nicht über andere Menschen zu ärgern, wenn Sie die Motivation ihrer Handlungen nicht verstehen können. Konzentrieren Sie sich auf Ihre Projekte und Aufgaben, die Ihnen vom Schöpfer gegeben wurden.
-Es ist wichtig, die Fähigkeit zur Planung und Zielsetzung zu entwickeln, obwohl Sie diese Fähigkeit bereits von Geburt an besitzen. Auch das Steigern der Energie durch Sport und Meditation hilft Ihnen, gute Laune zu bewahren und auftretende Probleme schnell zu lösen. Wenn in Ihrem Leben regelmäßiger Sport fehlt, wird Ihr Bewusstsein in Negativität und Zerstörung abgleiten.""",
+    24: """Bedeutung des Geburtstages 24 Durch ein tiefes Verständnis der Prozesse и den Drang, Neues zu schaffen, sind Sie in der Lage, ein Produkt zu erschaffen, das die Welt verändern wird. Es ist wichtig, sich nicht über andere Menschen zu ärgern, wenn Sie die Motivation ihrer Handlungen nicht verstehen können. Konzentrieren Sie sich auf Ihre Projekte und Aufgaben, die Ihnen vom Schöpfer gegeben wurden.
+Es ist wichtig, die Fähigkeit zur Planung и Zielsetzung zu entwickeln, obwohl Sie diese Fähigkeit bereits von Geburt an besitzen. Auch das Steigern der Energie durch Sport und Meditation hilft Ihnen, gute Laune zu bewahren und auftretende Probleme schnell zu lösen. Wenn in Ihrem Leben regelmäßiger Sport fehlt, wird Ihr Bewusstsein в Negativität и Zerstörung abgleiten.""",
 
-    25: """Bedeutung des Geburtstages 25 Ihre Stärken sind die Geschäftsentwicklung und Kommunikation durch das Verständnis von Menschen. Sie streben ständig danach, andere zu verstehen, und verwirklichen sich hervorragend in der Kommunikation. Täglicher Sport und die richtige Zielsetzung werden Ihnen in allen Angelegenheiten überragende Ergebnisse bringen.
-Solche Menschen können zu List und Lügen neigen, und manchmal zwingt die Energie der 7 sie, sich ohne besonderen Grund so zu verhalten. Es ist wichtig, innere Ehrlichkeit zu entwickeln und zu lernen, Verpflichtungen und Verantwortung zu übernehmen. In diesem Fall werden Sie ein genialer Führer, der andere Menschen versteht. Sie haben ausgezeichnete Verhandlungsfähigkeiten, aber es ist wichtig für Sie, Ihre Aufmerksamkeit auf das Ergebnis zu konzentrieren.""",
+    25: """Bedeutung des Geburtstages 25 Ihre Stärken sind die Geschäftsentwicklung и Kommunikation durch das Verständnis von Menschen. Sie streben ständig danach, andere zu verstehen, und verwirklichen sich hervorragend в der Kommunikation. Täglicher Sport и die richtige Zielsetzung werden Ihnen в allen Angelegenheiten überragende Ergebnisse bringen.
+Solche Menschen können zu List und Lügen neigen, und manchmal zwingt die Energie der 7 sie, sich ohne besonderen Grund so zu verhalten. Es ist wichtig, innere Ehrlichkeit zu entwickeln und zu lernen, Verpflichtungen и Verantwortung zu übernehmen. В diesem Fall werden Sie ein genialer Führer, der andere Menschen versteht. Sie haben ausgezeichnete Verhandlungsfähigkeiten, aber es ist wichtig для Sie, Ihre Aufmerksamkeit auf das Ergebnis zu konzentrieren.""",
 
-    26: """Bedeutung des Geburtstages 26 Obwohl Ihre Bestimmung Arbeit, Kontrolle und Ergebnis ist, sucht Ihr Ego ständig nach Genuss. Man kann sagen, dass Sie innerlich sehr reich sind, auch wenn Sie überhaupt kein Geld haben. Lernen Sie, finanzielle Ziele durch Verständnis und Streben nach Erfolg zu setzen, entwickeln Sie Disziplin des Geistes und treiben Sie Sport.
-Am 26. werden kreative Menschen mit einer reichen spirituellen Welt geboren. Manchmal erschafft diese Energie der Liebe und Weisheit Schwierigkeiten, weil Ihr Ego in allem nach Genuss sucht. Es ist notwendig, Selbstkontrolle und Disziplin zu entwickeln, damit Ihr reales Niveau Ihren hohen inneren Standards entspricht. In diesem Fall beherrschen Sie die materielle Welt, erreichen aber gleichzeitig Harmonie auf der spirituellen Ebene.""",
+    26: """Bedeutung des Geburtstages 26 Obwohl Ihre Bestimmung Arbeit, Kontrolle und Ergebnis ist, sucht Ihr Ego ständig nach Genuss. Man kann sagen, dass Sie innerlich sehr reich sind, auch wenn Sie überhaupt kein Geld haben. Lernen Sie, finanzielle Ziele durch Verständnis и Streben nach Erfolg zu setzen, entwickeln Sie Disziplin des Geistes и treiben Sie Sport.
+Am 26. werden kreative Menschen mit einer reichen spirituellen Welt geboren. Manchmal erschafft diese Energie der Liebe und Weisheit Schwierigkeiten, weil Ihr Ego in allem nach Genuss sucht. Es ist notwendig, Selbstkontrolle и Disziplin zu entwickeln, damit Ihr reales Niveau Ihren hohen inneren Standards entspricht. В diesem Fall beherrschen Sie die materielle Welt, erreichen aber gleichzeitig Harmonie auf der spirituellen Ebene.""",
 
-    27: """Bedeutung des Geburtstages 27 Ihre Stärke ist das tiefe Verständnis anderer Menschen und die Energie in Ihren Handlungen. Dabei wollen Sie ständig Anerkennung erhalten und leiden, wenn jemand Ihre Hilfe und Ihre Qualitäten nicht angemessen gewürdigt hat. Richten Sie Ihre Energie auf die Hilfe für Menschen, entwickeln Sie in sich Aufrichtigkeit und lernen Sie, selbstständig zu handeln, ohne Verantwortung auf andere Menschen abzuwälzen.
+    27: """Bedeutung des Geburtstages 27 Ihre Stärke ist das tiefe Verständnis anderer Menschen и die Energie in Ihren Handlungen. Dabei wollen Sie ständig Anerkennung erhalten und leiden, wenn jemand Ihre Hilfe и Ihre Qualitäten nicht angemessen gewürdigt hat. Richten Sie Ihre Energie auf die Hilfe für Menschen, entwickeln Sie in sich Aufrichtigkeit и lernen Sie, selbstständig zu handeln, ohne Verantwortung auf andere Menschen abzuwälzen.
 Geborene am 27. haben eine Leidenschaft für spirituelle Suche. Oft verneinen solche Menschen einfach die materielle Welt oder leben im Chaos, da die Energie der Zahlen 2 und 7 viele Zweifel und eine Loslösung von der realen Welt schafft. Ihre wirkliche Aufgabe ist es, sich in Partnerschaft mit anderen Menschen weiterzuentwickeln und komplexe Aufgaben zu lösen. Das ist Ihre Art, der Welt zu dienen.""",
 
     28: """Bedeutung des Geburtstages 28 Ihr Bewusstsein verwirklicht sich durch ein tiefes Verständnis von Managementprozessen. Sie sind fähig, sehr viel zu arbeiten und geniale Systeme zu erschaffen, indem Sie den gesamten Prozess steuern und kontrollieren. Sie sollten sich nicht von Kränkungen oder Erwartungen anderer Menschen leiten lassen – handeln Sie selbständig. Das ist der Schlüssel zu Ihrem Erfolg!
-Menschen, die am 28. Tag geboren sind, werden oft Eigentümer großer Unternehmen (z. B. Bill Gates, Elon Musk) oder talentierte Fachkräfte in anderen Bereichen. Doch um dieses geniale Potential voll zu entfalten, ist es notwendig, die Fähigkeit zum Verständnis und Zuhören mit dem Wunsch nach Kontrolle zu verbinden.
+Menschen, die am 28. Tag geboren sind, werden oft Eigentümer großer Unternehmen (z. B. Bill Gates, Elon Musk) oder talentierte Fachkräfte in anderen Bereichen. Doch um dieses geniale Potential voll zu entfalten, ist es notwendig, die Fähigkeit zum Verständnis и Zuhören mit dem Wunsch nach Kontrolle zu verbinden.
 Durch den Aufbau großer Strukturen und Teams gelangen Menschen mit diesem Geburtsdatum zum größten Erfolg.""",
 
     29: """Bedeutung des Geburtstages 29 Menschen, die an diesem Datum geboren sind, besitzen ein großes energetisches Potential von Mond und Mars. Sie können Ihre Bestimmung in der Hilfe für andere Menschen finden. Niemand kann diese Aufgabe besser erfüllen als Sie. Solche Menschen sind fähig, sich im spirituellen Bereich zu entwickeln und richten ihre Aufmerksamkeit auf den Dienst an der Menschheit – sofern sie sich in einem positiven Geisteszustand befinden.
 Befinden Sie sich jedoch in einer „negativen Phase“, neigen Sie zu Intrigen und geheimen Verbindungen, die zur Zerstörung führen. Diese Zerstörung wirkt sich in erster Linie negativ auf Ihr Schicksal aus. Genau deshalb sollte Ihre gesamte Aufmerksamkeit auf die Hilfe und das Verständnis für andere Menschen gerichtet sein. Darin liegt Ihre maximale Verwirklichung.""",
 
-    30: """Bedeutung des Geburtstages 30 Sie sind ein "ziemlich" listiger Mensch, der das Wissen anderer Menschen zunichtemacht. Dabei können Sie selbst sehr oft dumme oder unüberlegte Handlungen begehen, die negative Reaktionen anderer Menschen hervorrufen. Sie müssen unbedingt positives Denken entwickeln und Ihr eigenes Wissen über die Welt festigen, das Ihnen die Möglichkeit gibt, Ihre Ziele sehr schnell zu erreichen.
-Oft faulenzen Menschen, die am 30. geboren sind, bei ihrer Selbstbildung und sind nicht zum Lesen von Literatur geneigt. Aber tatsächlich ist die Steigerung Ihrer Allgemeinbildung der beste Weg, um schnell Erfolg zu haben. Im Idealfall sollten Sie Spezialist in mehreren Bereichen gleichzeitig werden. Dann werden Sie den Gegenstand viel besser verstehen als andere Menschen, und Ihre stürmische Energie wird Ihnen helfen, Ziele schneller zu erreichen.""",
+    30: """Bedeutung des Geburtstages 30 Sie sind ein "ziemlich" listiger Mensch, der das Wissen anderer Menschen zunichtemacht. Dabei können Sie selbst sehr oft dumme oder unüberlegte Handlungen begehen, die negative Reaktionen anderer Menschen hervorrufen. Sie müssen unbedingt positives Denken развивать и Ihr eigenes Wissen über die Welt festigen, das Ihnen die Möglichkeit gibt, Ihre Ziele sehr schnell zu erreichen.
+Oft faulenzen Menschen, die am 30. geboren sind, bei ihrer Selbstbildung und sind nicht zum Lesen von Literatur geneigt. Aber tatsächlich ist die Steigerung Ihrer Allgemeinbildung der beste Weg, um schnell Erfolg zu haben. Im Idealfall sollten Sie Spezialist в mehreren Bereichen gleichzeitig werden. Dann werden Sie den Gegenstand viel besser verstehen als andere Menschen, und Ihre stürmische Energie wird Ihnen helfen, Ziele schneller zu erreichen.""",
 
     31: """Bedeutung des Geburtstages 31 Sie sind ein Mensch mit großem Verstand und hervorragenden Führungsqualitäten. Diese Eigenschaft kann Ihnen sehr schnell Resultate bringen, kann jedoch auch zur Ursache von Zerstörung werden. Über Sie sagt man: „Unglück durch zu viel Verstand“. Sie wissen alles, wollen jedoch andere Menschen nicht verstehen – und genau dieses Hindernis müssen Sie in sich überwinden.
 Menschen, die an diesem Tag geboren sind, haben eine globale Bestimmung, die manchmal schwer zu begreifen und zu erkennen ist. Mit Hilfe Ihres Intellekts und Ihrer Führungsqualitäten müssen Sie globale und kreative Projekte erschaffen. Doch Ihr Bewusstsein sollte dabei auf Liebe und Dienst an den Menschen ausgerichtet sein. Nur in diesem Fall können sich Ihre genialen Ideen wirklich verwirklichen und der ganzen Welt großen Nutzen bringen.""" 
 }
 
-# Tagesenergie 1-9 - буквально из книги
+# Tagesenergie 1-9
 TAG_TXT = {
     1: """📅 Tagesenergie 1
 
@@ -333,7 +328,7 @@ TAG_TXT = {
 ** – Abschluss, Dienst und Großzügigkeit: bringen Sie Dinge zu Ende und schaffen Sie Raum für Neues. ...""",
 }
 
-# Partnerschaft (общая цифра пары 1–9)
+# Partnerschaft
 PARTNERSCHAFT_TXT = {
     1: ("💞 Partnerschaft 1\n\n"
         "Zwei Führungsenergien bringen Funken, Tempo und große Schaffenskraft. "
@@ -361,29 +356,29 @@ PARTNERSCHAFT_TXT = {
         "Reif, sinnstiftend, überpersönlich. Klare Grenzen, Balance Geben/Empfangen."),
 }
 
-# Kollektivenergie (общая цифра группы 1–9)
+# Gruppenenergie (ранее Kollektivenergie) — тексты переименованы
 KOLLEKTIV_TXT = {
-    1: ("👥 Kollektivenergie 1\n\n"
+    1: ("👥 Gruppenenergie 1\n\n"
         "Initiativen, starke Persönlichkeiten, Führung. Gemeinsame Vision bündeln, Rollen klären."),
-    2: ("👥 Kollektivenergie 2\n\n"
+    2: ("👥 Gruppenenergie 2\n\n"
         "Verbindend, ausgleichend, Wir-Gefühl. Verantwortlichkeiten verankern, ehrlich sprechen."),
-    3: ("👥 Kollektivenergie 3\n\n"
+    3: ("👥 Gruppenenergie 3\n\n"
         "Austausch, Ideen, Lernen. Prioritäten und Prozesse vermeiden Überladung."),
-    4: ("👥 Kollektivenergie 4\n\n"
+    4: ("👥 Gruppenenergie 4\n\n"
         "Strukturiert, ausdauernd, stabil. Innovation zulassen, nicht erstarren."),
-    5: ("👥 Kollektivenergie 5\n\n"
+    5: ("👥 Gruppenenergie 5\n\n"
         "Beweglich, chancenorientiert, Netzwerke. Inneren Kompass und Ziele definieren."),
-    6: ("👥 Kollektivenergie 6\n\n"
+    6: ("👥 Gruppenenergie 6\n\n"
         "Sorgend, wertorientiert, ästhetisch. Faire Lastenverteilung, Balance Nähe/Freiheit."),
-    7: ("👥 Kollektivenergie 7\n\n"
+    7: ("👥 Gruppenenergie 7\n\n"
         "Forschend, diszipliniert, tief. Ergebnisse teilen, Wissen praktisch anwenden."),
-    8: ("👥 Kollektivenergie 8\n\n"
+    8: ("👥 Gruppenenergie 8\n\n"
         "Leistungsstark, zielorientiert, Management. Transparenz und Ethik für Vertrauen."),
-    9: ("👥 Kollektivenergie 9\n\n"
+    9: ("👥 Gruppenenergie 9\n\n"
         "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung kultivieren."),
 }
 
-# Entwicklungspfad (из книги — логика пути «через что к чему», без формул) + Zu vermeiden
+# Entwicklungspfad (из книги — логика пути «через что к чему») + Zu vermeiden
 ENTWICKLUNGSPFAD = {
     1: "Die 1 reift zur 4 — über Beziehung (2) und Ausdruck (3): aus Impuls werden Disziplin und Struktur.",
     2: "Die 2 strebt zur 5 — über Wissen/Kommunikation (3) und Ordnung (4): Harmonie wird zu bewusster Freiheit.",
@@ -433,12 +428,13 @@ def back_menu_kb() -> InlineKeyboardMarkup:
 
 def main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🧮 Vollanalyse",     callback_data="calc_full")],
-        [InlineKeyboardButton("🔆 Tagesenergie",    callback_data="calc_day")],
-        [InlineKeyboardButton("💞 Partnerschaft",   callback_data="calc_compat")],
-        [InlineKeyboardButton("🔤 Namensenergie",   callback_data="calc_name")],
-        [InlineKeyboardButton("👥 Kollektivenergie",callback_data="calc_group")],
-        [InlineKeyboardButton("🧭 Entwicklungspfad",callback_data="calc_path")],
+        [InlineKeyboardButton("🧮 Vollanalyse",       callback_data="calc_full")],
+        [InlineKeyboardButton("🔆 Tagesenergie",      callback_data="calc_day")],
+        [InlineKeyboardButton("💞 Partnerschaft",     callback_data="calc_compat")],
+        [InlineKeyboardButton("🔤 Namensenergie",     callback_data="calc_name")],
+        [InlineKeyboardButton("👥 Gruppenenergie",    callback_data="calc_group")],  # Переименовано
+        [InlineKeyboardButton("🧭 Entwicklungspfad",  callback_data="calc_path")],
+        [InlineKeyboardButton("🤖 KI-Modus (Beta)",   callback_data="ai_mode")],     # Умный режим
     ])
 
 def menu_with_donate_keyboard(is_admin_user: bool) -> InlineKeyboardMarkup:
@@ -576,7 +572,7 @@ def export_csv_files() -> List[tuple[str, bytes]]:
     return [f1, f2]
 
 # ----------------------------- Меню/состояния ------------------------------
-ASK_DAY_BIRTH, ASK_COMPAT_1, ASK_COMPAT_2, ASK_NAME, ASK_GROUP, ASK_FULL, ASK_PATH = range(7)
+ASK_DAY_BIRTH, ASK_COMPAT_1, ASK_COMPAT_2, ASK_NAME, ASK_GROUP, ASK_FULL, ASK_PATH, ASK_AI = range(8)
 
 WELCOME = (
     "🌟 <b>Liebe Freunde!</b>\n\n"
@@ -588,10 +584,34 @@ WELCOME = (
 )
 MENU_HEADER = "🔽 <b>Hauptmenü</b>\nBitte wählen Sie:"
 
+# ---------------------------- "Умный" комментарий ---------------------------
+def smart_comment(g: int, h: int, v: int, e: int) -> str:
+    """
+    Лёгкий локальный «ИИ»-комментарий без внешних API.
+    Если захочешь реальный ИИ через API — здесь можно подключить его.
+    """
+    lines = []
+    lines.append(f"🧠 Geisteszahl {g}: {['Führung','Beziehung','Wissen','Struktur','Freiheit','Liebe','Tiefe','Erfolg','Dienst'][(g-1)%9]}")
+    lines.append(f"⚡ Handlungszahl {h}: {['direkt','verbindend','kommunikativ','strukturiert','flexibel','verantwortungsvoll','diszipliniert','zielorientiert','abschließend'][(h-1)%9]}")
+    lines.append(f"🎯 Verwirklichungszahl {v}: {['Strategie','Partnerschaft','Ausdruck','Systeme','Expansion','Weisheit','Exzellenz','Materie','Sinn'][(v-1)%9]}")
+    lines.append(f"📘 Ergebniszahl {e}: {['reife Führung','echte Kooperation','Wissensvermittlung','Vollendung','bewusste Freiheit','Liebe+Weisheit','Transformation','gerechter Erfolg','Dienst'][(e-1)%9]}")
+    tip = {
+        1: "Setzen Sie 1 Fokus-Ziel für 7 Tage und schließen Sie es ab.",
+        2: "Sprechen Sie heute 1 heikles Thema offen an — ohne Vorwurf.",
+        3: "Lernen Sie 30 Min. und erklären Sie es einem Menschen.",
+        4: "Plan → 3 Schritte → Ausführung. Nicht perfektionieren.",
+        5: "Eine Chance auswählen, nicht zehn — und handeln.",
+        6: "Eine Sache zu Ende bringen, dann belohnen.",
+        7: "Sport + 20 Min. Stille — Klarheit steigt.",
+        8: "Ziele messbar machen; delegieren Sie 1 Aufgabe.",
+        9: "Etwas abschließen und Platz für Neues schaffen."
+    }[(e-1)%9 + 1]
+    lines.append(f"💡 Tipp: {tip}")
+    return "\n".join(lines)
+
 # ---------------------------- Handlers ---------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     track_event(update, "start")
-    # ТОЛЬКО приветствие и кнопка «Zum Menü»
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("➡️ Zum Menü", callback_data="open_menu")]
     ])
@@ -649,6 +669,14 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=back_menu_kb()
         )
         return ASK_PATH
+    if data == "ai_mode":
+        await q.message.reply_html(
+            "🤖 <b>KI-Modus (Beta)</b>\n"
+            "Senden Sie Ihr <b>Geburtsdatum</b> (TT.MM.JJJJ), und ich gebe einen kurzen, kontextuellen Kommentar "
+            "zu Geistes-/Handlungs-/Verwirklichungs-/Ergebniszahl.",
+            reply_markup=back_menu_kb()
+        )
+        return ASK_AI
 
 # ---- Vollanalyse ----
 async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -661,7 +689,10 @@ async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
         e = ergebniszahl(g, h, v)
         geld = geldcode(d, m, y)
 
-        extra = [[InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")]]
+        extra = [
+            [InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")],
+            [InlineKeyboardButton("🤖 Mehr wissen?", callback_data=f"ai_more:{g}:{h}:{v}:{e}")]
+        ]
         kb = donate_keyboard(extra_rows=extra,
                              show_stats_button=True,
                              is_admin_user=is_admin(update))
@@ -798,7 +829,7 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
-# ---- Kollektivenergie ----
+# ---- Gruppenenergie (бывш. Kollektivenergie) ----
 async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     track_event(update, "group")
     text = (update.message.text or "").strip()
@@ -823,10 +854,10 @@ async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
         avoid_txt = ZU_VERMEIDEN.get(kollektiv, "")
 
         out = (
-            "👥 <b>Kollektivenergie</b>\n\n"
+            "👥 <b>Gruppenenergie</b>\n\n"
             f"{personen_txt}\n\n"
-            f"{KOLLEKTIV_TXT.get(kollektiv,'Dieses Kollektiv entfaltet eine besondere Dynamik und Lernaufgabe.')}\n\n"
-            + (f"🧭 <b>Entwicklungspfad (Kollektiv):</b> {pfad_txt}\n" if pfad_txt else "") +
+            f"{KOLLEKTIV_TXT.get(kollektiv,'Diese Gruppe entfaltet eine besondere Dynamik und Lernaufgabe.')}\n\n"
+            + (f"🧭 <b>Entwicklungspfad (Gruppe):</b> {pfad_txt}\n" if pfad_txt else "") +
             (f"⚠️ <b>Zu vermeiden:</b> {avoid_txt}\n" if avoid_txt else "")
             + DONATE_TEXT
         )
@@ -898,6 +929,41 @@ async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_PATH
 
+# ---- KI-Modus: отдельная кнопка (просит дату, даёт комментарий) ----
+async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    track_event(update, "ai_mode_input")
+    try:
+        d, m, y = parse_date(update.message.text.strip())
+        g = geisteszahl(d)
+        h = handlungszahl(d, m, y)
+        v = verwirklichungszahl(g, h)
+        e = ergebniszahl(g, h, v)
+        comment = smart_comment(g, h, v, e)
+        await update.message.reply_html("🤖 <b>KI-Kommentar</b>\n\n" + html_escape(comment),
+                                        reply_markup=donate_keyboard(is_admin_user=is_admin(update)))
+        return ConversationHandler.END
+    except Exception as ex:
+        await update.message.reply_html(
+            f"❌ {html_escape(str(ex))}\nBitte senden Sie Datum im Format <code>TT.MM.JJJJ</code>.",
+            reply_markup=back_menu_kb()
+        )
+        return ASK_AI
+
+# ---- Callback: «🤖 Mehr wissen?» из Vollanalyse ----
+async def ai_more_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    track_event(update, "ai_more_click")
+    try:
+        _, g, h, v, e = q.data.split(":")
+        g, h, v, e = int(g), int(h), int(v), int(e)
+        comment = smart_comment(g, h, v, e)
+        await q.message.reply_html("🤖 <b>KI-Kommentar</b>\n\n" + html_escape(comment),
+                                   reply_markup=donate_keyboard(is_admin_user=is_admin(update)))
+    except Exception as ex:
+        await q.message.reply_html(f"❌ {html_escape(str(ex))}",
+                                   reply_markup=donate_keyboard(is_admin_user=is_admin(update)))
+
 # ---- Vollanalyse при простом вводе даты (фоллбек) ----
 async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (update.message.text or "").strip()
@@ -915,7 +981,10 @@ async def full_analysis_fallback(update: Update, context: ContextTypes.DEFAULT_T
         day_text = DAY_BIRTH_TXT.get(d, "").strip()
         day_block = f"📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}\n\n" if day_text else ""
 
-        extra = [[InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")]]
+        extra = [
+            [InlineKeyboardButton(f"📖 Mehr lesen über {g}", callback_data=f"more_g{g}")],
+            [InlineKeyboardButton("🤖 Mehr wissen?", callback_data=f"ai_more:{g}:{h}:{v}:{e}")]
+        ]
         kb = donate_keyboard(extra_rows=extra,
                              show_stats_button=True,
                              is_admin_user=is_admin(update))
@@ -980,7 +1049,7 @@ def main():
 
     # Диалоговое меню
     conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(on_menu_click, pattern="^calc_")],
+        entry_points=[CallbackQueryHandler(on_menu_click, pattern="^(calc_|ai_mode)")],
         states={
             ASK_FULL:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_full),
                            CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
@@ -996,6 +1065,8 @@ def main():
                            CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
             ASK_PATH:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_path),
                            CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
+            ASK_AI:       [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_ai),
+                           CallbackQueryHandler(back_to_menu, pattern="^back_menu$")],
         },
         fallbacks=[CommandHandler("menu", menu_cmd)],
         allow_reentry=True,
@@ -1009,12 +1080,12 @@ def main():
     app.add_handler(CallbackQueryHandler(read_more_geist, pattern=r"^more_g[1-9]$"))
     # Статистика (кнопка)
     app.add_handler(CallbackQueryHandler(show_stats_callback, pattern=r"^show_stats$"))
+    # Callback «🤖 Mehr wissen?»
+    app.add_handler(CallbackQueryHandler(ai_more_callback, pattern=r"^ai_more:\d+:\d+:\d+:\d+$"))
 
-    # Фоллбек: если просто прислали дату — Vollanalyse
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, full_analysis_fallback))
-
-    print("🤖 KeyToFate läuft. /start → приветствие, затем «Zum Menü». Меню содержит донат-кнопку внизу. /stats и /export_stats — только для админа.")
+    print("🤖 KeyToFate läuft. /start → приветствие, затем «Zum Menü».")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
