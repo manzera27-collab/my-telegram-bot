@@ -33,10 +33,7 @@ CORPUS_TEXT = _load_corpus()
 def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str]:
     """
     Извлекает блоки по заголовкам вида:
-      Geisteszahl 1
-      Handlungszahl 8
-      Verwirklichungszahl 3
-      Ergebniszahl 7
+      Geisteszahl 1 / Handlungszahl 8 / Verwirklichungszahl 3 / Ergebniszahl 7
       Gemeinsame Geisteszahl 4
     """
     out: dict[int, str] = {}
@@ -54,8 +51,8 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
         start = m.end()
         end = matches[i+1].start() if i+1 < len(matches) else len(corpus)
         block = corpus[start:end].strip()
-        # НЕ удаляем одиночные числовые строки — они используются как подзаголовки дней (напр. 16, 25)
-        block = re.sub(r'\n{3,}', '\n\n', block)  # только лишние пустые строки
+        # чистим только лишние пустые строки — подзаголовки дней оставляем
+        block = re.sub(r'\n{3,}', '\n\n', block)
         out[n] = block
     return out
 
@@ -244,7 +241,7 @@ def back_kb() -> InlineKeyboardMarkup:
 
 async def send_long_html(update: Update, text: str, with_back: bool = True):
     """Рубим текст на части ≤4000 символов и шлём по очереди.
-       ВАЖНО: Кнопку «Назад» ставим на ПОСЛЕДНЮЮ часть, чтобы она была внизу."""
+       Кнопку «Назад» ставим на ПОСЛЕДНЮЮ часть, чтобы она была внизу."""
     MAX = 4000
     chunks = []
     src = text
@@ -294,25 +291,34 @@ def _touch_user(update: Update):
 def split_geistes_block_by_days(block: str) -> Tuple[str, Dict[int, str]]:
     """
     Возвращает (общая_часть, {день: текст_раздела}).
-    Подзаголовки дней считаем строками, состоящими только из числа 1..31.
+    Подзаголовки дней распознаются в двух вариантах:
+      1) Строка только с числом: 7 / 16 / 25
+      2) Немецкий заголовок: "Wenn Sie am 25. geboren sind:" (варианты . или , перед "geboren")
     """
     if not block:
         return "", {}
-    pattern = re.compile(r'^\s*(?:#{1,6}\s*)?([1-9]|[12]\d|3[01])\s*$', re.M)  # '16', '25', '7' и т.п.
-    parts: Dict[int, str] = {}
-    matches = list(pattern.finditer(block))
-    if not matches:
-        return block.strip(), {}  # нет подзаголовков — всё общее
-    # Общая часть — до первого числового подзаголовка
-    general_start = 0
-    general_end = matches[0].start()
-    general = block[general_start:general_end].strip()
+    # Вариант 1: чисто числовая строка
+    pat_num = re.compile(r'^\s*(?:#{1,6}\s*)?([1-9]|[12]\d|3[01])\s*$', re.M)
+    # Вариант 2: немецкая форма
+    pat_de = re.compile(
+        r'^\s*(?:Wenn\s+(?:Sie|Du|du)\s+am)\s+([1-9]|[12]\d|3[01])\s*[.,]?\s+geboren\s+(?:sind|bist)\s*:?\s*$',
+        re.M
+    )
 
-    for i, m in enumerate(matches):
-        day = int(m.group(1))
-        start = m.end()
-        end = matches[i+1].start() if i+1 < len(matches) else len(block)
-        sec = block[start:end].strip()
+    # Собираем все совпадения обоих типов
+    matches = []
+    matches += [(m.start(), m.end(), int(m.group(1))) for m in pat_num.finditer(block)]
+    matches += [(m.start(), m.end(), int(m.group(1))) for m in pat_de.finditer(block)]
+    matches.sort(key=lambda x: x[0])
+
+    if not matches:
+        return block.strip(), {}
+
+    general = block[:matches[0][0]].strip()
+    parts: Dict[int, str] = {}
+    for i, (s, e, day) in enumerate(matches):
+        end = matches[i+1][0] if i+1 < len(matches) else len(block)
+        sec = block[e:end].strip()
         parts[day] = sec
     return general, parts
 
@@ -327,7 +333,7 @@ def build_fullanalyse_text(d: int, m: int, y: int) -> str:
 
     # Разделяем общий текст Geisteszahl и подблоки по дням
     general_g, day_parts = split_geistes_block_by_days(geist_full)
-    specific_day_part = day_parts.get(d, "").strip()
+    specific_day_part = (day_parts.get(d) or "").strip()
 
     parts = [
         f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>",
@@ -337,7 +343,7 @@ def build_fullanalyse_text(d: int, m: int, y: int) -> str:
         parts.append(html_escape(general_g))  # общий текст по самой Geisteszahl (например, 7)
 
     # ❗ Сразу даём персональный подблок по введённому дню (например, 25),
-    #     НЕ добавляя промежуточные 16/7 и т. п.
+    #    НЕ добавляя другие дни (7, 16 и т.д.)
     if specific_day_part:
         parts.append(f"\n📌 <b>Spezifisch für Geburtstag {d}</b>\n{html_escape(specific_day_part)}")
 
