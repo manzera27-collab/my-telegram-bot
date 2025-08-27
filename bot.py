@@ -99,7 +99,50 @@ PLANET_INFO: Dict[int, str] = {
     9: "♂ Planet: Mars. 🎯 Passend: Service/NGO, Militär/Polizei, Sport, Beratung.",
 }
 
-# Тексты дней рождения (вставь свои реальные полные тексты)
+# Короткие подписи (не выводим в Vollanalyse — оставлены для совместимости)
+HANDLUNG_SHORT = [
+    'Direkt/Initiativ','Verbindend/Diplomatisch','Kommunikativ/Wissensorientiert',
+    'Strukturiert/Verlässlich','Flexibel/Chancenorientiert','Fürsorglich/Verantwortungsvoll',
+    'Transformativ/Diszipliniert','Zielorientiert/Belastbar','Dienend/Abschließend'
+]
+VERWIRK_SHORT = [
+    'Führung & Strategie','Beziehungen & Partnerschaften','Wissen, Lehre & Ausdruck',
+    'Strukturen & Systeme','Expansion & Kommunikation','Liebe & Weisheit',
+    'Exzellenz & Bühne','Materieller Erfolg','Dienst & höchste Weisheit'
+]
+ERGEBNIS_SHORT = [
+    'Reife Führung','Echte Kooperation','Ausdruck & Wissen','Struktur & Vollendung',
+    'Freiheit in Bewusstheit','Liebe mit Weisheit','Transformation & Tiefe',
+    'Gerechter Erfolg','Dienst & Großzügigkeit'
+]
+
+# Tagesenergie 1–9
+TAG_TXT = {
+    1: "Neuer Zyklus, klare Entscheidungen, erste Schritte.",
+    2: "Dialog, Ausgleich, Partnerschaft, ehrliche Gespräche.",
+    3: "Kommunikation, Lernen, Reisen, inspirierender Austausch.",
+    4: "Struktur, Planung, praktische Arbeit, Ordnung schaffen.",
+    5: "Chancen, Bewegung, Netzwerke, flexible Lösungen.",
+    6: "Harmonie, Familie, Schönheit, reife Verantwortung.",
+    7: "Analyse, Spiritualität, Hygiene des Geistes.",
+    8: "Management, Finanzen, Ergebnisse, Leistung.",
+    9: "Abschluss, Dienst, Großzügigkeit, Raum für Neues.",
+}
+
+# Краткие описания для Kollektivenergie
+KOLLEKTIV_TXT = {
+    1: "Initiativen, starke Persönlichkeiten, Führung. Vision bündeln, Rollen klären.",
+    2: "Verbindend, ausgleichend, Wir-Gefühl. Verantwortung verankern, ehrlich sprechen.",
+    3: "Austausch, Ideen, Lernen. Prioritäten & Prozesse halten Fokus.",
+    4: "Strukturiert, ausdauernd, stabil. Innovation zulassen, nicht erstarren.",
+    5: "Beweglich, chancenorientiert, Netzwerke. Innerer Kompass & Ziele.",
+    6: "Sorgend, wertorientiert, ästhetisch. Faire Lasten, Balance Nähe/Freiheit.",
+    7: "Forschend, diszipliniert, tief. Ergebnisse teilen, Wissen anwenden.",
+    8: "Leistungsstark, zielorientiert, Management. Transparenz & Ethik.",
+    9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
+}
+
+# Полные тексты дней рождения — ваши тексты остаются как есть
 DAY_BIRTH_TXT: Dict[int, str] = {
     1: """Bedeutung des Geburtstages 1 ...""",
     2: """Bedeutung des Geburtstages 2 ...""",
@@ -193,41 +236,32 @@ def back_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[InlineKeyboardButton("↩️ Zurück zum Menü", callback_data="open_menu")]])
 
 async def send_long_html(update: Update, text: str, with_back: bool = True):
-    """Рубим текст на части ≤4000 символов и шлём по очереди."""
+    """Рубим текст на части ≤4000 символов и шлём по очереди.
+       ВАЖНО: Кнопку «Назад» ставим на ПОСЛЕДНЮЮ часть, чтобы она была внизу."""
     MAX = 4000
     chunks = []
-    while len(text) > MAX:
-        cut = text.rfind("\n\n", 0, MAX)
-        if cut == -1: cut = text.rfind("\n", 0, MAX)
+    src = text
+    while len(src) > MAX:
+        cut = src.rfind("\n\n", 0, MAX)
+        if cut == -1: cut = src.rfind("\n", 0, MAX)
         if cut == -1: cut = MAX
-        chunks.append(text[:cut])
-        text = text[cut:]
-    if text: chunks.append(text)
+        chunks.append(src[:cut])
+        src = src[cut:]
+    if src: chunks.append(src)
     if not chunks: return
-    await update.message.reply_html(chunks[0], reply_markup=back_kb() if with_back else None)
-    for c in chunks[1:]:
+    # все промежуточные куски без клавиатуры
+    for c in chunks[:-1]:
         await update.message.reply_html(c)
+    # последний кусок — с кнопкой «назад», если требуется
+    last_kb = back_kb() if with_back else None
+    await update.message.reply_html(chunks[-1], reply_markup=last_kb)
 
 # =========================== Состояния, меню, учёт пользователей ============
 ASK_DAY_BIRTH, ASK_COMPAT_1, ASK_COMPAT_2, ASK_NAME, ASK_GROUP, ASK_FULL, ASK_PATH = range(7)
 
-WELCOME = (
-"Liebe Freunde!\n"
-"Vor Ihnen liegt ein einzigartiges Wissen: <b>KeyToFate</b>. KeyToFate – der Schlüssel zu sich selbst und zu allem. "
-"Es wird Ihr wahres Potenzial entfalten und Ihnen helfen, Harmonie mit sich selbst und der Welt um Sie herum zu finden.\n\n"
-"In diesem Wissen sind erstaunliche Erkenntnisse über die Kraft der menschlichen Persönlichkeit und ihre Bestimmung gesammelt, "
-"die in Ihrem Geburtsdatum verborgen sind. Wenn Sie diese Gesetze des Universums studieren, können Sie Ihre Seele erkennen, "
-"alle Talente entfalten und Ihr wahres Potenzial verwirklichen.\n\n"
-"Dieses Werk stellt eine einzigartige Methode zur Analyse der „Matrix des Menschen“ dar, die Ihnen hilft, Ihren Lebensweg zu klären "
-"und Antworten auf die wichtigsten Fragen zu finden.\n\n"
-"Darüber hinaus enthält dieses Werk weitere wertvolle Informationen: die Kompatibilität zwischen Menschen, die richtige Entwicklung "
-"der Energiezyklen, eine detaillierte Beschreibung aller Anlagen des Menschen sowie des Weges, den Ihre Seele in dieser Inkarnation geht.\n\n"
-"Wenn Sie dieses Wissen anwenden, werden Sie Harmonie finden, stabile Beziehungen zu Ihren Liebsten aufbauen und Erfolg in Ihren "
-"Unternehmungen sowie Ihrer Karriere erzielen. So erkennen Sie Ihre Stärken, entfalten Ihre Talente und finden zu innerer Ruhe und Selbstvertrauen.\n\n"
-"Lüften Sie den Schleier des Geheimnisses um Ihr Schicksal!\n"
-"Und lassen Sie dieses Wissen zu Ihrem weisen Wegweiser auf dem Pfad zum Glück werden!"
-)
-
+WELCOME = ("🌟 <b>Willkommen!</b>\n\n"
+"Vor Ihnen liegt <b>KeyToFate</b> – Lehre über Zahlen und Wege.\n\n"
+"✨ Lüften Sie den Schleier Ihres Schicksals – und lassen Sie KeyToFate Ihr Wegweiser sein. ✨")
 MENU_HEADER = "🔽 <b>Hauptmenü</b>\nBitte wählen Sie:"
 
 def main_menu() -> InlineKeyboardMarkup:
@@ -251,6 +285,41 @@ def _touch_user(update: Update):
     except Exception:
         pass
 
+# -------------------------- Хелперы сборки текстов ---------------------------
+def build_fullanalyse_text(d: int, m: int, y: int) -> str:
+    g = geisteszahl(d)
+    geld = geldcode(d, m, y)
+    geist_short = GEISTES_TXT.get(g, "")
+    geist_full  = get_geistes(g)  # длинный блок из книги
+    day_text    = (DAY_BIRTH_TXT.get(d) or "").strip()
+    planet_info = PLANET_INFO.get(g, "")
+
+    parts = [
+        f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>",
+        f"🧠 <b>Geisteszahl {g}</b>\n{html_escape(geist_short)}",
+    ]
+    if geist_full:
+        parts.append(html_escape(geist_full))
+    if day_text:
+        parts.append(f"\n📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}")
+    if planet_info:
+        parts.append(f"\n➕ <b>Zusätzliche Info</b>\n{html_escape(planet_info)}")
+    parts.append(f"\n💰 <b>Geldcode:</b> <code>{geld}</code>")
+    return "\n\n".join(parts)
+
+def build_tagesenergie_text(d: int) -> str:
+    today = datetime.now()
+    val = tagesenergie(d, today.day)
+    body = TAG_TXT.get(val, "Energie im Fluss.")
+    return f"📅 <b>Tagesenergie {today.day:02d}.{today.month:02d}.{today.year}</b>\n\n{html_escape(body)}"
+
+def build_entwicklungspfad_text(d: int) -> str:
+    g = geisteszahl(d)
+    out = (f"🧭 <b>Entwicklungspfad (aus Geisteszahl {g})</b>\n\n"
+           f"{ENTWICKLUNGSPFAD.get(g,'')}\n\n"
+           f"⚠️ <b>Zu vermeiden:</b> {ZU_VERMEIDEN.get(g,'')}")
+    return out
+
 # ================================ Handlers ==================================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
@@ -267,65 +336,81 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     q = update.callback_query; data = q.data
     await q.answer()
+    dob = context.user_data.get("dob")  # (d,m,y) если уже сохранено
+
     if data=="calc_full":
+        if dob:
+            d,m,y = dob
+            txt = build_fullanalyse_text(d,m,y)
+            # эмулируем автопрокрутку: последняя часть с кнопкой «назад»
+            # отправляем как новые сообщения, не трогаем исходное меню
+            fake_update = Update(update.update_id, message=q.message)  # тип: игнорируем; используем reply на message
+            # безопасно: используем исходный message как контейнер ответа
+            await q.message.reply_html("🧮 Verwende gespeichertes Datum…")
+            update_for_send = Update(update.update_id, message=q.message)
+            await send_long_html(update_for_send, txt, with_back=True)
+            return ConversationHandler.END
         await q.message.reply_html("🧮 Geben Sie Geburtsdatum ein (TT.MM.JJJJ):"); return ASK_FULL
+
     if data=="calc_day":
+        if dob:
+            d,_,_ = dob
+            txt = build_tagesenergie_text(d)
+            await q.message.reply_html("☀️ Verwende gespeichertes Datum…")
+            update_for_send = Update(update.update_id, message=q.message)
+            await send_long_html(update_for_send, txt, with_back=True)
+            return ConversationHandler.END
         await q.message.reply_html("Geben Sie Ihr Geburtsdatum ein (TT.MM.JJJJ):"); return ASK_DAY_BIRTH
+
     if data=="calc_compat":
+        if dob:
+            d1,m1,y1 = dob
+            context.user_data["compat1"] = (d1,m1,y1, f"{d1:02d}.{m1:02d}.{y1}")
+            await q.message.reply_html("Geben Sie Geburtsdatum <b>Person 2</b> ein (TT.MM.JJJJ):"); return ASK_COMPAT_2
         await q.message.reply_html("Geben Sie Geburtsdatum Person 1 ein (TT.MM.JJJJ):"); return ASK_COMPAT_1
+
     if data=="calc_name":
         await q.message.reply_html("Geben Sie den Namen ein (lateinische Schreibweise):"); return ASK_NAME
+
     if data=="calc_group":
         context.user_data["group_birthdays"] = []
         await q.message.reply_html("👥 Bis zu 5 Geburtstage eingeben. Schreiben Sie <b>fertig</b>, wenn bereit."); return ASK_GROUP
+
     if data=="calc_path":
+        if dob:
+            d,_,_ = dob
+            txt = build_entwicklungspfad_text(d)
+            await q.message.reply_html("🧭 Verwende gespeichertes Datum…")
+            update_for_send = Update(update.update_id, message=q.message)
+            await send_long_html(update_for_send, txt, with_back=True)
+            return ConversationHandler.END
         await q.message.reply_html("🧭 Bitte Geburtsdatum eingeben (TT.MM.JJJJ):"); return ASK_PATH
+
     if data=="ki_mode":
         await q.message.reply_html("🤖 KI-Modus (Beta): Funktion in Entwicklung. Bald verfügbar!", reply_markup=back_kb()); return ConversationHandler.END
+
     if data=="donate":
         if PAYPAL_URL:
             await q.message.reply_html(f"💖 <b>Spende</b>\nUnterstütze das Projekt via <a href=\"{PAYPAL_URL}\">PayPal</a>. Danke!", reply_markup=back_kb(), disable_web_page_preview=True)
         else:
             await q.message.reply_html("💖 <b>Spende</b>\nSetze bitte ENV <code>PAYPAL_URL</code> mit deiner PayPal-Link.", reply_markup=back_kb())
         return ConversationHandler.END
+
     if data=="stats":
         await q.message.reply_html(f"📊 <b>KeyToFate – Statistik</b>\n\n👥 Benutzer gesamt: <b>{len(USERS)}</b>", reply_markup=back_kb()); return ConversationHandler.END
+
     return ConversationHandler.END
 
-# ---- Vollanalyse (сначала Geisteszahl, потом Geburtstag) ----
+# ---- Vollanalyse (сокращённый вариант) ----
 async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     try:
         d,m,y = parse_date(update.message.text.strip())
-        g = geisteszahl(d)
-        geld = geldcode(d,m,y)
-
-        geist_short = GEISTES_TXT.get(g, "")
-        geist_full  = get_geistes(g)  # длинный блок из книги
-        day_text    = (DAY_BIRTH_TXT.get(d) or "").strip()
-        planet_info = PLANET_INFO.get(g, "")
-
-        parts = [
-            f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>",
-        ]
-
-        # 1) Сначала — Geisteszahl (кратко + полный блок)
-        parts.append(f"🧠 <b>Geisteszahl {g}</b>\n{html_escape(geist_short)}")
-        if geist_full:
-            parts.append(html_escape(geist_full))
-
-        # 2) Доп. инфо (планета/камни/профессии)
-        if planet_info:
-            parts.append(f"\n➕ <b>Zusätzliche Info</b>\n{html_escape(planet_info)}")
-
-        # 3) Затем — конкретный Geburtstag (только введённый день, напр. 25)
-        if day_text:
-            parts.append(f"\n📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}")
-
-        # 4) Geldcode
-        parts.append(f"\n💰 <b>Geldcode:</b> <code>{geld}</code>")
-
-        await send_long_html(update, "\n\n".join(parts), with_back=True)
+        # запоминаем дату рождения
+        context.user_data["dob"] = (d,m,y)
+        context.user_data["dob_str"] = f"{d:02d}.{m:02d}.{y}"
+        txt = build_fullanalyse_text(d,m,y)
+        await send_long_html(update, txt, with_back=True)
         return ConversationHandler.END
     except Exception as ex:
         await update.message.reply_html(f"❌ Fehler: {html_escape(str(ex))}", reply_markup=back_kb()); return ASK_FULL
@@ -335,14 +420,11 @@ async def ask_day_birth(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     try:
         d,m,y = parse_date(update.message.text.strip())
-        today = datetime.now()
-        val = tagesenergie(d, today.day)
-        body = TAG_TXT.get(val, "Energie im Fluss.")
-        await send_long_html(
-            update,
-            f"📅 <b>Tagesenergie {today.day:02d}.{today.month:02d}.{today.year}</b>\n\n{html_escape(body)}",
-            with_back=True
-        )
+        # запоминаем дату рождения
+        context.user_data["dob"] = (d,m,y)
+        context.user_data["dob_str"] = f"{d:02d}.{m:02d}.{y}"
+        txt = build_tagesenergie_text(d)
+        await send_long_html(update, txt, with_back=True)
         return ConversationHandler.END
     except Exception as ex:
         await update.message.reply_html(f"❌ {html_escape(str(ex))}", reply_markup=back_kb()); return ASK_DAY_BIRTH
@@ -351,6 +433,9 @@ async def ask_day_birth(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_compat1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     d1,m1,y1 = parse_date(update.message.text.strip())
+    # при вводе — тоже запоминаем как личную DOB (удобно)
+    context.user_data["dob"] = (d1,m1,y1)
+    context.user_data["dob_str"] = f"{d1:02d}.{m1:02d}.{y1}"
     context.user_data["compat1"]=(d1,m1,y1,update.message.text.strip())
     await update.message.reply_html("Jetzt <b>Geburtsdatum Person 2</b> eingeben (TT.MM.JJJJ):", reply_markup=back_kb()); return ASK_COMPAT_2
 
@@ -409,18 +494,6 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ---- Gruppenenergie (без Pfad) ----
-KOLLEKTIV_TXT = {
-    1: "Initiativen, starke Persönlichkeiten, Führung. Vision bündeln, Rollen klären.",
-    2: "Verbindend, ausgleichend, Wir-Gefühl. Verantwortung verankern, ehrlich sprechen.",
-    3: "Austausch, Ideen, Lernen. Prioritäten & Prozesse halten Fokus.",
-    4: "Strukturiert, ausdauernd, stabil. Innovation zulassen, nicht erstarren.",
-    5: "Beweglich, chancenorientiert, Netzwerke. Innerer Kompass & Ziele.",
-    6: "Sorgend, wertorientiert, ästhetisch. Faire Lasten, Balance Nähe/Freiheit.",
-    7: "Forschend, diszipliniert, tief. Ergebnisse teilen, Wissen anwenden.",
-    8: "Leistungsstark, zielorientiert, Management. Transparenz & Ethik.",
-    9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
-}
-
 async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     text = (update.message.text or "").strip()
@@ -466,11 +539,11 @@ ZU_VERMEIDEN = {
 async def ask_path(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     d,m,y = parse_date(update.message.text.strip())
-    g = geisteszahl(d)
-    out = (f"🧭 <b>Entwicklungspfad (aus Geisteszahl {g})</b>\n\n"
-           f"{ENTWICKLUNGSPFAD.get(g,'')}\n\n"
-           f"⚠️ <b>Zu vermeiden:</b> {ZU_VERMEIDEN.get(g,'')}")
-    await send_long_html(update, out, with_back=True); return ConversationHandler.END
+    # запоминаем дату рождения
+    context.user_data["dob"] = (d,m,y)
+    context.user_data["dob_str"] = f"{d:02d}.{m:02d}.{y}"
+    txt = build_entwicklungspfad_text(d)
+    await send_long_html(update, txt, with_back=True); return ConversationHandler.END
 
 # =============================== Bootstrap ==================================
 def main():
