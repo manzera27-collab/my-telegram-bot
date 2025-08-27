@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-from __future__ import annotations
 import os, re
 
-# Где искать книгу
+# Путь к книге (можно задать переменной окружения K2_PATH)
 K2_PATH = os.getenv("K2_PATH", "KeytoFate_arbeiten.txt")
 
 def _load_corpus() -> str:
+    """Читает текст книги из K2_PATH или из /app/KeytoFate_arbeiten.txt (для Railway/Docker)."""
     try:
         if os.path.exists(K2_PATH):
             with open(K2_PATH, "r", encoding="utf-8") as f:
                 return f.read()
-        # запасной путь для Docker/Railway
         alt = "/app/KeytoFate_arbeiten.txt"
         if os.path.exists(alt):
             with open(alt, "r", encoding="utf-8") as f:
@@ -33,6 +32,7 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
     out: dict[int, str] = {}
     if not corpus:
         return out
+
     pat = re.compile(heading_regex, re.I | re.M)
     matches = list(pat.finditer(corpus))
     if not matches:
@@ -46,8 +46,9 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
         start = m.end()
         end = matches[i+1].start() if i+1 < len(matches) else len(corpus)
         block = corpus[start:end].strip()
-        block = re.sub(r'\n{3,}', '\n\n', block)          # схлопываем лишние пустые строки
-        block = re.sub(r'\n\s*\d+\s*\n', '\n', block)     # убираем одиночные номера строк
+        # чистим лишние пустые строки и одиночные нумерации
+        block = re.sub(r'\n{3,}', '\n\n', block)
+        block = re.sub(r'\n\s*\d+\s*\n', '\n', block)
         out[n] = block
     return out
 
@@ -65,7 +66,6 @@ def get_ergebnis(n: int) -> str:  return (ERGEBNIS_FULL.get(n) or "").strip()
 def get_partner(n: int) -> str:   return (PARTNER_FULL.get(n) or "").strip()
 
 # -*- coding: utf-8 -*-
-from __future__ import annotations
 from typing import Dict
 
 # Короткие аннотации по Geisteszahl (1–9)
@@ -124,10 +124,9 @@ KOLLEKTIV_TXT = {
     9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
 }
 
-# Полные тексты дней рождения 1–31 (твои длинные блоки — БЕЗ ИЗМЕНЕНИЙ).
-# Я вставил твою версию целиком ниже.
+# Полные тексты дней рождения 1–31 (твои длинные блоки)
 DAY_BIRTH_TXT: Dict[int, str] = {
-     1: """Bedeutung des Geburtstages 1 Sie besitzen ein absolut reines Bewusstsein, eine junge Seele. Sie haben wenige Zweifel, aber viel Entschlossenheit, zu handeln und voranzugehen. Nutzen Sie unbedingt Ihr Führungspotential!
+    1: """Bedeutung des Geburtstages 1 Sie besitzen ein absolut reines Bewusstsein, eine junge Seele. Sie haben wenige Zweifel, aber viel Entschlossenheit, zu handeln und voranzugehen. Nutzen Sie unbedingt Ihr Führungspotential!
 Manchmal leiden Menschen, die am 1. Tag geboren sind, unter Pessimismus oder sie sind von anderen enttäuscht. Dies geschieht, weil nicht alle in ihrer Umgebung bereit sind, sich mit ihrer „führenden“ Meinung abzufinden.
 Es wird empfohlen, sich mit Psychologie zu beschäftigen und die Energie des Verstehens anderer Menschen zu entwickeln – also stets nach gegenseitigem Verständnis zu streben. Außerdem wird allen Einsen empfohlen, die Energie des Gebens und der Barmherzigkeit zu kultivieren.""",
 
@@ -238,8 +237,8 @@ Oft faulenzen Menschen, die am 30. geboren sind, bei ihrer Selbstbildung und sin
 Menschen, die an diesem Tag geboren sind, haben eine globale Bestimmung, die manchmal schwer zu begreifen und zu erkennen ist. Mit Hilfe Ihres Intellekts und Ihrer Führungsqualitäten müssen Sie globale und kreative Projekte erschaffen. Doch Ihr Bewusstsein sollte dabei auf Liebe und Dienst an den Menschen ausgerichtet sein. Nur in diesem Fall können sich Ihre genialen Ideen wirklich verwirklichen und der ganzen Welt großen Nutzen bringen.""" 
 }
 
+
 # -*- coding: utf-8 -*-
-from __future__ import annotations
 import os, re
 from datetime import datetime
 from typing import Tuple, List
@@ -251,18 +250,13 @@ from telegram.ext import (
 )
 from dotenv import load_dotenv
 
-# локальные модули
-from k2f_texts import (
-    GEISTES_TXT, HANDLUNG_SHORT, VERWIRK_SHORT, ERGEBNIS_SHORT,
-    TAG_TXT, KOLLEKTIV_TXT, DAY_BIRTH_TXT
-)
-from k2f_book_loader import (
-    get_geistes, get_handlungs, get_verwirk, get_ergebnis, get_partner
-)
+
 
 # ========================= API TOKEN =========================
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
+if not API_TOKEN:
+    raise SystemExit("API_TOKEN is missing. Set it in env.")
 # =============================================================
 
 # ----------------------------- Utils -----------------------------
@@ -437,7 +431,6 @@ def normalize_latin(s: str) -> str:
     return (s.replace("Ä","A").replace("Ö","O").replace("Ü","U")
               .replace("ä","a").replace("ö","o").replace("ü","u")
               .replace("ß","SS"))
-
 def namensenergie(text: str) -> int:
     vals = [NAME_MAP[ch] for ch in normalize_latin(text).upper() if ch in NAME_MAP]
     return reduzieren(sum(vals)) if vals else 0
@@ -447,7 +440,7 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(f"🔤 <b>Namensenergie</b> „{html_escape(name)}“: <b>{val}</b>")
     return ConversationHandler.END
 
-# ---- Kollektivenergie ---- (без Entwicklungspfad)
+# ---- Kollektivenergie ---- (без Entwicklungspfад)
 async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text=(update.message.text or "").strip()
     if text.lower()=="fertig":
@@ -468,13 +461,13 @@ async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ---- Entwicklungspfad ---- (индивидуальный)
 ENTWICKLUNGSPFAD = {
     1: "Die 1 reift zur 4 — über Beziehung (2) und Ausdruck (3): aus Impuls werden Disziplin und Struktur.",
-    2: "Die 2 strebt zur 5 — über Wissen/Kommunikation (3) und Ordnung (4): Harmonie wird zu bewusster Freiheit.",
+    2: "Die 2 strebt zur 5 — über Wissen/Kommunikation (3) и Ordnung (4): Harmonie wird zu bewusster Freiheit.",
     3: "Die 3 entfaltet sich zur 6 — über Struktur (4) und Wandel (5): Kreativität wird zu reifer Verantwortung.",
     4: "Die 4 wächst zur 7 — über Freiheit (5) und Liebe/Verantwortung (6): Ordnung wird zu innerer Weisheit.",
     5: "Die 5 strebt zur 8 — über 6 und 7: Liebe/Verantwortung → Wahrheit/Disziplin → gerechter Erfolg.",
     6: "Die 6 geht zur 9 — über Tiefgang (7) und Macht/Erfolg (8): zur universellen Liebe und zum Dienst.",
     7: "Die 7 geht zur 1 — über 8 und 9: Disziplin & Macht, dann Abschluss & Dienst hin zur reifen Führung.",
-    8: "Die 8 strebt zur 2 — über 9 und 1: von Macht zu Kooperation und Diplomatie.",
+    8: "Die 8 strebt zur 2 — über 9 и 1: von Macht zu Kooperation und Diplomatie.",
     9: "Die 9 findet zur 3 — über 1 und 2: Dienst & Vollendung führen zu schöpferischem Ausdruck.",
 }
 ZU_VERMEIDEN = {
@@ -517,5 +510,5 @@ def main():
     print("🤖 KeyToFate läuft. /start → Menü.")
     app.run_polling()
 
-if __name__=="__main__": main()
-
+if __name__=="__main__":
+    main()
