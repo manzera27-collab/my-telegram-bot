@@ -33,8 +33,6 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
     out: dict[int, str] = {}
     if not corpus:
         return out
-
-    # Найдём все заголовки
     pat = re.compile(heading_regex, re.I | re.M)
     matches = list(pat.finditer(corpus))
     if not matches:
@@ -48,39 +46,29 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
         start = m.end()
         end = matches[i+1].start() if i+1 < len(matches) else len(corpus)
         block = corpus[start:end].strip()
-        # подчистим лишние пустоты
-        block = re.sub(r'\n{3,}', '\n\n', block)
-        # уберём лишние одиночные номера строк
-        block = re.sub(r'\n\s*\d+\s*\n', '\n', block)
+        block = re.sub(r'\n{3,}', '\n\n', block)          # схлопываем лишние пустые строки
+        block = re.sub(r'\n\s*\d+\s*\n', '\n', block)     # убираем одиночные номера строк
         out[n] = block
     return out
 
 # Разделы из книги
-GEISTES_FULL = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Geisteszahl\s+([1-9])\s*$')
+GEISTES_FULL   = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Geisteszahl\s+([1-9])\s*$')
 HANDLUNGS_FULL = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Handlungszahl\s+([1-9])\s*$')
-VERWIRK_FULL = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Verwirklichungszahl\s+([1-9])\s*$')
-ERGEBNIS_FULL = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Ergebniszahl\s+([1-9])\s*$')
-PARTNER_FULL = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Gemeinsame\s+Geisteszahl\s+([1-9])\s*$')
+VERWIRK_FULL   = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Verwirklichungszahl\s+([1-9])\s*$')
+ERGEBNIS_FULL  = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Ergebniszahl\s+([1-9])\s*$')
+PARTNER_FULL   = _extract_numbered_sections(CORPUS_TEXT, r'^\s*(?:##\s*)?Gemeinsame\s+Geisteszahl\s+([1-9])\s*$')
 
-def get_geistes(n: int) -> str:
-    return (GEISTES_FULL.get(n) or "").strip()
-
-def get_handlungs(n: int) -> str:
-    return (HANDLUNGS_FULL.get(n) or "").strip()
-
-def get_verwirk(n: int) -> str:
-    return (VERWIRK_FULL.get(n) or "").strip()
-
-def get_ergebnis(n: int) -> str:
-    return (ERGEBNIS_FULL.get(n) or "").strip()
-
-def get_partner(n: int) -> str:
-    return (PARTNER_FULL.get(n) or "").strip()
+def get_geistes(n: int) -> str:   return (GEISTES_FULL.get(n) or "").strip()
+def get_handlungs(n: int) -> str: return (HANDLUNGS_FULL.get(n) or "").strip()
+def get_verwirk(n: int) -> str:   return (VERWIRK_FULL.get(n) or "").strip()
+def get_ergebnis(n: int) -> str:  return (ERGEBNIS_FULL.get(n) or "").strip()
+def get_partner(n: int) -> str:   return (PARTNER_FULL.get(n) or "").strip()
 
 # -*- coding: utf-8 -*-
 from __future__ import annotations
+from typing import Dict
 
-# Короткие аннотации по Geisteszahl (1–9) — как раньше
+# Короткие аннотации по Geisteszahl (1–9)
 GEISTES_TXT = {
     1: "(Menschen, geboren am 1., 10., 19., 28.) — Führung, starker Wille, Initiative.",
     2: "(2., 11., 20., 29.) — Harmonie, Diplomatie, empathisches Verstehen.",
@@ -93,7 +81,7 @@ GEISTES_TXT = {
     9: "(9., 18., 27.) — Dienst, Mitgefühl, Vollendung.",
 }
 
-# Краткие подписи для карточек в Vollanalyse
+# Краткие подписи для Vollanalyse
 HANDLUNG_SHORT = [
     'Direkt/Initiativ','Verbindend/Diplomatisch','Kommunikativ/Wissensorientiert',
     'Strukturiert/Verlässlich','Flexibel/Chancenorientiert','Fürsorglich/Verantwortungsvoll',
@@ -110,7 +98,7 @@ ERGEBNIS_SHORT = [
     'Gerechter Erfolg','Dienst & Großzügigkeit'
 ]
 
-# Тексты Tagesenergie 1–9 (можешь позже заменить на из книги)
+# Tagesenergie 1–9
 TAG_TXT = {
     1: "Neuer Zyklus, klare Entscheidungen, erste Schritte.",
     2: "Dialog, Ausgleich, Partnerschaft, ehrliche Gespräche.",
@@ -123,7 +111,7 @@ TAG_TXT = {
     9: "Abschluss, Dienst, Großzügigkeit, Raum für Neues.",
 }
 
-# Краткие описания для Kollektivenergie (1–9)
+# Краткие описания для Kollektivenergie (без Entwicklungspfad)
 KOLLEKTIV_TXT = {
     1: "Initiativen, starke Persönlichkeiten, Führung. Vision bündeln, Rollen klären.",
     2: "Verbindend, ausgleichend, Wir-Gefühl. Verantwortung verankern, ehrlich sprechen.",
@@ -136,11 +124,10 @@ KOLLEKTIV_TXT = {
     9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
 }
 
-# Полные тексты по конкретному дню рождения (1–31).
-# Здесь я оставил твои длинные тексты «Bedeutung des Geburtstages …»
-# (скопированы из твоего рабочего файла).
+# Полные тексты дней рождения 1–31 (твои длинные блоки — БЕЗ ИЗМЕНЕНИЙ).
+# Я вставил твою версию целиком ниже.
 DAY_BIRTH_TXT: Dict[int, str] = {
-    1: """Bedeutung des Geburtstages 1 Sie besitzen ein absolut reines Bewusstsein, eine junge Seele. Sie haben wenige Zweifel, aber viel Entschlossenheit, zu handeln und voranzugehen. Nutzen Sie unbedingt Ihr Führungspotential!
+     1: """Bedeutung des Geburtstages 1 Sie besitzen ein absolut reines Bewusstsein, eine junge Seele. Sie haben wenige Zweifel, aber viel Entschlossenheit, zu handeln und voranzugehen. Nutzen Sie unbedingt Ihr Führungspotential!
 Manchmal leiden Menschen, die am 1. Tag geboren sind, unter Pessimismus oder sie sind von anderen enttäuscht. Dies geschieht, weil nicht alle in ihrer Umgebung bereit sind, sich mit ihrer „führenden“ Meinung abzufinden.
 Es wird empfohlen, sich mit Psychologie zu beschäftigen und die Energie des Verstehens anderer Menschen zu entwickeln – also stets nach gegenseitigem Verständnis zu streben. Außerdem wird allen Einsen empfohlen, die Energie des Gebens und der Barmherzigkeit zu kultivieren.""",
 
@@ -377,14 +364,12 @@ async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
         v,e = verwirklichungszahl(g,h), ergebniszahl(g,h,v)
         geld = geldcode(d,m,y)
 
-        # Короткий текст + ДЛИННЫЙ из книги
         geist_short = GEISTES_TXT.get(g,"")
         geist_full  = get_geistes(g)
         handl_full  = get_handlungs(h)
         verw_full   = get_verwirk(v)
         erg_full    = get_ergebnis(e)
 
-        # День рождения 1..31 — из локального словаря
         day_text = (DAY_BIRTH_TXT.get(d) or "").strip()
         day_block = f"\n\n📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}" if day_text else ""
 
@@ -452,6 +437,7 @@ def normalize_latin(s: str) -> str:
     return (s.replace("Ä","A").replace("Ö","O").replace("Ü","U")
               .replace("ä","a").replace("ö","o").replace("ü","u")
               .replace("ß","SS"))
+
 def namensenergie(text: str) -> int:
     vals = [NAME_MAP[ch] for ch in normalize_latin(text).upper() if ch in NAME_MAP]
     return reduzieren(sum(vals)) if vals else 0
@@ -461,7 +447,7 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(f"🔤 <b>Namensenergie</b> „{html_escape(name)}“: <b>{val}</b>")
     return ConversationHandler.END
 
-# ---- Kollektivenergie ---- (без Entwicklungspfad, как ты просил)
+# ---- Kollektivenergie ---- (без Entwicklungspfad)
 async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text=(update.message.text or "").strip()
     if text.lower()=="fertig":
@@ -479,7 +465,7 @@ async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group.extend(parsed)
     await update.message.reply_html(f"✅ Hinzugefügt: {len(parsed)}. Tippen Sie <b>fertig</b>."); return ASK_GROUP
 
-# ---- Entwicklungspfad ---- (индивидуальный — как раньше)
+# ---- Entwicklungspfad ---- (индивидуальный)
 ENTWICKLUNGSPFAD = {
     1: "Die 1 reift zur 4 — über Beziehung (2) und Ausdruck (3): aus Impuls werden Disziplin und Struktur.",
     2: "Die 2 strebt zur 5 — über Wissen/Kommunikation (3) und Ordnung (4): Harmonie wird zu bewusster Freiheit.",
@@ -532,3 +518,4 @@ def main():
     app.run_polling()
 
 if __name__=="__main__": main()
+
