@@ -99,50 +99,7 @@ PLANET_INFO: Dict[int, str] = {
     9: "♂ Planet: Mars. 🎯 Passend: Service/NGO, Militär/Polizei, Sport, Beratung.",
 }
 
-# Короткие подписи для возможного использования (не выводим в Vollanalyse)
-HANDLUNG_SHORT = [
-    'Direkt/Initiativ','Verbindend/Diplomatisch','Kommunikativ/Wissensorientiert',
-    'Strukturiert/Verlässlich','Flexibel/Chancenorientiert','Fürsorglich/Verantwortungsvoll',
-    'Transformativ/Diszipliniert','Zielorientiert/Belastbar','Dienend/Abschließend'
-]
-VERWIRK_SHORT = [
-    'Führung & Strategie','Beziehungen & Partnerschaften','Wissen, Lehre & Ausdruck',
-    'Strukturen & Systeme','Expansion & Kommunikation','Liebe & Weisheit',
-    'Exzellenz & Bühne','Materieller Erfolg','Dienst & höchste Weisheit'
-]
-ERGEBNIS_SHORT = [
-    'Reife Führung','Echte Kooperation','Ausdruck & Wissen','Struktur & Vollendung',
-    'Freiheit in Bewusstheit','Liebe mit Weisheit','Transformation & Tiefe',
-    'Gerechter Erfolg','Dienst & Großzügigkeit'
-]
-
-# Tagesenergie 1–9
-TAG_TXT = {
-    1: "Neuer Zyklus, klare Entscheidungen, erste Schritte.",
-    2: "Dialog, Ausgleich, Partnerschaft, ehrliche Gespräche.",
-    3: "Kommunikation, Lernen, Reisen, inspirierender Austausch.",
-    4: "Struktur, Planung, praktische Arbeit, Ordnung schaffen.",
-    5: "Chancen, Bewegung, Netzwerke, flexible Lösungen.",
-    6: "Harmonie, Familie, Schönheit, reife Verantwortung.",
-    7: "Analyse, Spiritualität, Hygiene des Geistes.",
-    8: "Management, Finanzen, Ergebnisse, Leistung.",
-    9: "Abschluss, Dienst, Großzügigkeit, Raum für Neues.",
-}
-
-# Краткие описания для Kollektivenergie
-KOLLEKTIV_TXT = {
-    1: "Initiativen, starke Persönlichkeiten, Führung. Vision bündeln, Rollen klären.",
-    2: "Verbindend, ausgleichend, Wir-Gefühl. Verantwortung verankern, ehrlich sprechen.",
-    3: "Austausch, Ideen, Lernen. Prioritäten & Prozesse halten Fokus.",
-    4: "Strukturiert, ausdauernd, stabil. Innovation zulassen, nicht erstarren.",
-    5: "Beweglich, chancenorientiert, Netzwerke. Innerer Kompass & Ziele.",
-    6: "Sorgend, wertorientiert, ästhetisch. Faire Lasten, Balance Nähe/Freiheit.",
-    7: "Forschend, diszipliniert, tief. Ergebnisse teilen, Wissen anwenden.",
-    8: "Leistungsstark, zielorientiert, Management. Transparenz & Ethik.",
-    9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
-}
-
-# Полные тексты дней рождения — сюда подставь свои длинные тексты (сократил для примера)
+# Тексты дней рождения (вставь свои реальные полные тексты)
 DAY_BIRTH_TXT: Dict[int, str] = {
     1: """Bedeutung des Geburtstages 1 ...""",
     2: """Bedeutung des Geburtstages 2 ...""",
@@ -254,9 +211,23 @@ async def send_long_html(update: Update, text: str, with_back: bool = True):
 # =========================== Состояния, меню, учёт пользователей ============
 ASK_DAY_BIRTH, ASK_COMPAT_1, ASK_COMPAT_2, ASK_NAME, ASK_GROUP, ASK_FULL, ASK_PATH = range(7)
 
-WELCOME = ("🌟 <b>Willkommen!</b>\n\n"
-"Vor Ihnen liegt <b>KeyToFate</b> – Lehre über Zahlen und Wege.\n\n"
-"✨ Lüften Sie den Schleier Ihres Schicksals – und lassen Sie KeyToFate Ihr Wegweiser sein. ✨")
+WELCOME = (
+"Liebe Freunde!\n"
+"Vor Ihnen liegt ein einzigartiges Wissen: <b>KeyToFate</b>. KeyToFate – der Schlüssel zu sich selbst und zu allem. "
+"Es wird Ihr wahres Potenzial entfalten und Ihnen helfen, Harmonie mit sich selbst und der Welt um Sie herum zu finden.\n\n"
+"In diesem Wissen sind erstaunliche Erkenntnisse über die Kraft der menschlichen Persönlichkeit und ihre Bestimmung gesammelt, "
+"die in Ihrem Geburtsdatum verborgen sind. Wenn Sie diese Gesetze des Universums studieren, können Sie Ihre Seele erkennen, "
+"alle Talente entfalten und Ihr wahres Potenzial verwirklichen.\n\n"
+"Dieses Werk stellt eine einzigartige Methode zur Analyse der „Matrix des Menschen“ dar, die Ihnen hilft, Ihren Lebensweg zu klären "
+"und Antworten auf die wichtigsten Fragen zu finden.\n\n"
+"Darüber hinaus enthält dieses Werk weitere wertvolle Informationen: die Kompatibilität zwischen Menschen, die richtige Entwicklung "
+"der Energiezyklen, eine detaillierte Beschreibung aller Anlagen des Menschen sowie des Weges, den Ihre Seele in dieser Inkarnation geht.\n\n"
+"Wenn Sie dieses Wissen anwenden, werden Sie Harmonie finden, stabile Beziehungen zu Ihren Liebsten aufbauen und Erfolg in Ihren "
+"Unternehmungen sowie Ihrer Karriere erzielen. So erkennen Sie Ihre Stärken, entfalten Ihre Talente und finden zu innerer Ruhe und Selbstvertrauen.\n\n"
+"Lüften Sie den Schleier des Geheimnisses um Ihr Schicksal!\n"
+"Und lassen Sie dieses Wissen zu Ihrem weisen Wegweiser auf dem Pfad zum Glück werden!"
+)
+
 MENU_HEADER = "🔽 <b>Hauptmenü</b>\nBitte wählen Sie:"
 
 def main_menu() -> InlineKeyboardMarkup:
@@ -321,7 +292,7 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.message.reply_html(f"📊 <b>KeyToFate – Statistik</b>\n\n👥 Benutzer gesamt: <b>{len(USERS)}</b>", reply_markup=back_kb()); return ConversationHandler.END
     return ConversationHandler.END
 
-# ---- Vollanalyse (сокращённый вариант) ----
+# ---- Vollanalyse (сначала Geisteszahl, потом Geburtstag) ----
 async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     try:
@@ -336,17 +307,22 @@ async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         parts = [
             f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>",
-            f"🧠 <b>Geisteszahl {g}</b>\n{html_escape(geist_short)}",
         ]
+
+        # 1) Сначала — Geisteszahl (кратко + полный блок)
+        parts.append(f"🧠 <b>Geisteszahl {g}</b>\n{html_escape(geist_short)}")
         if geist_full:
             parts.append(html_escape(geist_full))
 
-        if day_text:
-            parts.append(f"\n📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}")
-
+        # 2) Доп. инфо (планета/камни/профессии)
         if planet_info:
             parts.append(f"\n➕ <b>Zusätzliche Info</b>\n{html_escape(planet_info)}")
 
+        # 3) Затем — конкретный Geburtstag (только введённый день, напр. 25)
+        if day_text:
+            parts.append(f"\n📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}")
+
+        # 4) Geldcode
         parts.append(f"\n💰 <b>Geldcode:</b> <code>{geld}</code>")
 
         await send_long_html(update, "\n\n".join(parts), with_back=True)
@@ -433,6 +409,18 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ---- Gruppenenergie (без Pfad) ----
+KOLLEKTIV_TXT = {
+    1: "Initiativen, starke Persönlichkeiten, Führung. Vision bündeln, Rollen klären.",
+    2: "Verbindend, ausgleichend, Wir-Gefühl. Verantwortung verankern, ehrlich sprechen.",
+    3: "Austausch, Ideen, Lernen. Prioritäten & Prozesse halten Fokus.",
+    4: "Strukturiert, ausdauernd, stabil. Innovation zulassen, nicht erstarren.",
+    5: "Beweglich, chancenorientiert, Netzwerke. Innerer Kompass & Ziele.",
+    6: "Sorgend, wertorientiert, ästhetisch. Faire Lasten, Balance Nähe/Freiheit.",
+    7: "Forschend, diszipliniert, tief. Ergebnisse teilen, Wissen anwenden.",
+    8: "Leistungsstark, zielorientiert, Management. Transparenz & Ethik.",
+    9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
+}
+
 async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _touch_user(update)
     text = (update.message.text or "").strip()
