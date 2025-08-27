@@ -51,7 +51,8 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
         start = m.end()
         end = matches[i+1].start() if i+1 < len(matches) else len(corpus)
         block = corpus[start:end].strip()
-        block = re.sub(r'\n{3,}', '\n\n', block)  # только лишние пустые строки
+        # чистим только лишние пустые строки
+        block = re.sub(r'\n{3,}', '\n\n', block)
         out[n] = block
     return out
 
@@ -81,7 +82,7 @@ GEISTES_TXT: Dict[int, str] = {
     9: "(9., 18., 27.) — Dienst, Mitgefühl, Vollendung.",
 }
 
-# Доп. информация (планеты + подходящие сферы) по Geisteszahl
+# Доп. информация (планеты + подходящие сферы)
 PLANET_INFO: Dict[int, str] = {
     1: "🌞 Planet: Sonne. 💼 Passend: Führung, Unternehmertum, Strategie, Sales.",
     2: "🌙 Planet: Mond. 🤝 Passend: Diplomatie, HR, Coaching, Partnerschaften.",
@@ -94,7 +95,7 @@ PLANET_INFO: Dict[int, str] = {
     9: "♂ Planet: Mars. 🎯 Passend: Service/NGO, Militär/Polizei, Sport, Beratung.",
 }
 
-# Tagesenergie и Kollektiv
+# Tagesenergie 1–9
 TAG_TXT = {
     1: "Neuer Zyklus, klare Entscheidungen, erste Schritte.",
     2: "Dialog, Ausgleich, Partnerschaft, ehrliche Gespräche.",
@@ -106,6 +107,8 @@ TAG_TXT = {
     8: "Management, Finanzen, Ergebnisse, Leistung.",
     9: "Abschluss, Dienst, Großzügigkeit, Raum für Neues.",
 }
+
+# Краткие описания для Kollektivenergie
 KOLLEKTIV_TXT = {
     1: "Initiativen, starke Persönlichkeiten, Führung. Vision bündeln, Rollen klären.",
     2: "Verbindend, ausgleichend, Wir-Gefühl. Verantwortung verankern, ehrlich sprechen.",
@@ -118,7 +121,7 @@ KOLLEKTIV_TXT = {
     9: "Sinnstiftend, humanitär, abschließend. Grenzen wahren, Erholung.",
 }
 
-# Полные тексты дней рождения — остаются как есть
+# Полные тексты дней рождения — ваши тексты остаются как есть
 DAY_BIRTH_TXT: Dict[int, str] = {
     1:"""Bedeutung des Geburtstages 1 ...""", 2:"""Bedeutung des Geburtstages 2 ...""",
     3:"""Bedeutung des Geburtstages 3 ...""", 4:"""Bedeutung des Geburtstages 4 ...""",
@@ -138,10 +141,11 @@ DAY_BIRTH_TXT: Dict[int, str] = {
     31:"""Bedeutung des Geburtstages 31 ...""",
 }
 
-# ============================== Конфиг токена/PayPal ===============================
+# ============================== Конфиг токена/ссылок ===============================
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 
+# PayPal: приоритет — PAYPAL_URL; если пусто, строим из PAYPAL_EMAIL (по умолчанию manzera@mail.ru)
 PAYPAL_URL = (os.getenv("PAYPAL_URL", "") or "").strip()
 if not PAYPAL_URL:
     PAYPAL_EMAIL = os.getenv("PAYPAL_EMAIL", "manzera@mail.ru").strip()
@@ -198,7 +202,7 @@ def geldcode(day: int, month: int, year: int) -> str:
 def tagesenergie(bday_day: int, today_day: int) -> int:
     return reduzieren_1_9(sum(int(d) for d in f"{bday_day:02d}{today_day:02d}"))
 
-# ---------------------- Кнопка «Назад» и длинные сообщения -------------------
+# Отправка длинных сообщений + кнопка «Назад»
 def back_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[InlineKeyboardButton("↩️ Zurück zum Menü", callback_data="open_menu")]])
 
@@ -211,7 +215,8 @@ async def send_long_html(update: Update, text: str, with_back: bool = True):
         cut = src.rfind("\n\n", 0, MAX)
         if cut == -1: cut = src.rfind("\n", 0, MAX)
         if cut == -1: cut = MAX
-        chunks.append(src[:cut]); src = src[cut:]
+        chunks.append(src[:cut])
+        src = src[cut:]
     if src: chunks.append(src)
     if not chunks: return
     for c in chunks[:-1]:
@@ -246,7 +251,7 @@ def _touch_user(update: Update):
     except Exception:
         pass
 
-# --------------- Парсер подблоков дней (число/немецкий заголовок) -----------
+# -------------------------- Парсер подблоков "по дням" в Geisteszahl --------
 NUM_LINE = re.compile(r'^\s*(?:[-–•]?\s*)?([1-9]|[12]\d|3[01])\s*\.?\s*$', re.M)
 DE_HEADING = re.compile(
     r'^\s*[-–•]?\s*(?:wenn)\s+(?:sie|du)\s+am\s+([1-9]|[12]\d|3[01])\s*[.,]?\s+geboren\s+(?:sind|bist)\s*[:\-–]?\s*$',
@@ -254,15 +259,21 @@ DE_HEADING = re.compile(
 )
 
 def split_geistes_block_by_days(block: str) -> Tuple[str, Dict[int, str]]:
-    """Возвращает (общая_часть, {день: текст_раздела})."""
+    """
+    Возвращает (общая_часть, {день: текст_раздела}).
+    Поддерживаем два вида подзаголовков: отдельное число в строке и фразу «Wenn Sie am 25. geboren sind:».
+    """
     if not block:
         return "", {}
+
     matches = []
     matches += [(m.start(), m.end(), int(m.group(1))) for m in NUM_LINE.finditer(block)]
     matches += [(m.start(), m.end(), int(m.group(1))) for m in DE_HEADING.finditer(block)]
     matches.sort(key=lambda x: x[0])
+
     if not matches:
         return block.strip(), {}
+
     general = block[:matches[0][0]].strip()
     parts: Dict[int, str] = {}
     for i, (s, e, day) in enumerate(matches):
@@ -287,9 +298,9 @@ def build_fullanalyse_text(d: int, m: int, y: int) -> str:
         f"🧠 <b>Geisteszahl {g}</b>\n{html_escape(geist_short)}",
     ]
     if general_g:
-        parts.append(html_escape(general_g))  # полный общий блок по Geisteszahl
+        parts.append(html_escape(general_g))  # общий текст по Geisteszahl (например, 7)
 
-    # ❗ Сразу после общего — ТОЛЬКО подблок для введённого дня (например, 25).
+    # Сразу после общего — ТОЛЬКО подблок для введённого дня (например, 25)
     if specific_day_part:
         parts.append(f"\n📌 <b>Spezifisch für Geburtstag {d}</b>\n{html_escape(specific_day_part)}")
 
@@ -308,26 +319,26 @@ def build_tagesenergie_text(d: int) -> str:
 
 # ---- Entwicklungspfad ----
 ENTWICKLUNGSPFAD = {
-    1:"Die 1 reift zur 4 — über Beziehung (2) und Ausdruck (3): aus Impuls werden Disziplin und Struktur.",
-    2:"Die 2 strebt zur 5 — über Wissen/Kommunikation (3) und Ordnung (4): Harmonie wird zu bewusster Freiheit.",
-    3:"Die 3 entfaltet sich zur 6 — über Struktur (4) und Wandel (5): Kreativität wird zu reifer Verantwortung.",
-    4:"Die 4 wächst zur 7 — über Freiheit (5) und Liebe/Verantwortung (6): Ordnung wird zu innerer Weisheit.",
-    5:"Die 5 strebt zur 8 — über 6 und 7: Liebe/Verantwortung → Wahrheit/Disziplin → gerechter Erfolg.",
-    6:"Die 6 geht zur 9 — über Tiefgang (7) und Macht/Erfolg (8): zur universellen Liebe und zum Dienst.",
-    7:"Die 7 geht zur 1 — über 8 и 9: Disziplin & Macht, dann Abschluss & Dienst hin zur reifen Führung.",
-    8:"Die 8 strebt zur 2 — über 9 и 1: von Macht zu Kooperation und Diplomatie.",
-    9:"Die 9 findet zur 3 — über 1 и 2: Dienst & Vollendung führen zu schöpferischem Ausdruck.",
+    1: "Die 1 reift zur 4 — über Beziehung (2) und Ausdruck (3): aus Impuls werden Disziplin und Struktur.",
+    2: "Die 2 strebt zur 5 — über Wissen/Kommunikation (3) und Ordnung (4): Harmonie wird zu bewusster Freiheit.",
+    3: "Die 3 entfaltet sich zur 6 — über Struktur (4) und Wandel (5): Kreativität wird zu reifer Verantwortung.",
+    4: "Die 4 wächst zur 7 — über Freiheit (5) und Liebe/Verantwortung (6): Ordnung wird zu innerer Weisheit.",
+    5: "Die 5 strebt zur 8 — über 6 und 7: Liebe/Verantwortung → Wahrheit/Disziplin → gerechter Erfolg.",
+    6: "Die 6 geht zur 9 — über Tiefgang (7) und Macht/Erfolg (8): zur universellen Liebe und zum Dienst.",
+    7: "Die 7 geht zur 1 — über 8 und 9: Disziplin & Macht, dann Abschluss & Dienst hin zur reifen Führung.",
+    8: "Die 8 strebt zur 2 — über 9 und 1: von Macht zu Kooperation und Diplomatie.",
+    9: "Die 9 findet zur 3 — über 1 und 2: Dienst & Vollendung führen zu schöpferischem Ausdruck.",
 }
 ZU_VERMEIDEN = {
-    1:"Ego-Alleingänge, Ungeduld, Dominanz.",
-    2:"Unentschlossenheit, konfliktscheues Schweigen, Selbstverleugnung.",
-    3:"Zerstreuung, zu viele Projekte, Oberflächlichkeit.",
-    4:"Überstrenge Routinen, Dogmatismus, Detailkontrolle.",
-    5:"Reizjagd, Hektik, Flucht in Abwechslung, Bindungsangst.",
-    6:"Überverantwortung, Einmischung, subtile Schuldgefühle.",
-    7:"Isolation, endloses Zweifeln, Theorie ohne Praxis.",
-    8:"Machtspiele, Mikromanagement, Erfolgsfixierung.",
-    9:"Selbstaufopferung, diffuse Ziele, Grenzenlosigkeit.",
+    1: "Ego-Alleingänge, Ungeduld, Dominanz.",
+    2: "Unentschlossenheit, konfliktscheues Schweigen, Selbstverleugnung.",
+    3: "Zerstreuung, zu viele Projekte, Oberflächlichkeit.",
+    4: "Überstrenge Routinen, Dogmatismus, Detailkontrolle.",
+    5: "Reizjagd, Hektik, Flucht in Abwechslung, Bindungsangst.",
+    6: "Überverantwortung, Einmischung, subtile Schuldgefühle.",
+    7: "Isolation, endloses Zweifeln, Theorie ohne Praxis.",
+    8: "Machtspiele, Mikromanagement, Erfolgsfixierung.",
+    9: "Selbstaufopferung, diffuse Ziele, Grenzenlosigkeit.",
 }
 
 def build_entwicklungspfad_text(d: int) -> str:
@@ -362,7 +373,7 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     dob = context.user_data.get("dob")
     dob_str = context.user_data.get("dob_str")
 
-    # --- Vollanalyse: дать выбор при наличии сохранённой даты ---
+    # --- Vollanalyse: выбор при наличии сохранённой даты ---
     if data == "calc_full":
         if dob:
             await q.message.reply_html("🧮 <b>Vollanalyse</b>\nWie sollen wir fortfahren?",
@@ -385,7 +396,7 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.message.reply_html("🧮 Bitte neues Geburtsdatum eingeben (TT.MM.JJJJ):")
         return ASK_FULL
 
-    # --- Остальные пункты меню как раньше ---
+    # --- Остальные пункты меню ---
     if data=="calc_day":
         if dob:
             d,_,_ = dob
@@ -492,7 +503,7 @@ NAME_DESC = {
     2:"Harmonie, Diplomatie, Kooperation; Name fördert Beziehungen und Takt.",
     3:"Ausdruck, Lernen, Kreativität; Name stärkt Kommunikation & Medien.",
     4:"Ordnung, System, Verlässlichkeit; Name gibt Struktur & Ausdauer.",
-    5:"Bewegung, Handel, Netzwerke; Name öffнет Chancen & Kontakte.",
+    5:"Bewegung, Handel, Netzwerke; Name öffnet Chancen & Kontakte.",
     6:"Liebe, Fürsorge, Verantwortung; Name zieht Schönheit & Service an.",
     7:"Weisheit, Analyse, Tiefe; Name führt zu Forschung & Perfektion.",
     8:"Macht, Management, Ergebnis; Name stärkt Autorität & Finanzen.",
@@ -517,12 +528,32 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_long_html(update, f"🔤 <b>Namensenergie</b> „{html_escape(name)}“: <b>{val}</b>\n{html_escape(desc)}", with_back=True)
     return ConversationHandler.END
 
+# ---- Gruppenenergie ----
+async def ask_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    _touch_user(update)
+    text = (update.message.text or "").strip()
+    if text.lower() == "fertig":
+        group = context.user_data.get("group_birthdays", [])
+        if len(group) < 2:
+            await update.message.reply_html("❌ Mindestens 2 Personen.", reply_markup=back_kb()); return ASK_GROUP
+        geistes_list = [geisteszahl(d) for d,_,_ in group]
+        kollektiv = reduzieren_1_9(sum(geistes_list))
+        personen = "\n".join(f"• {d:02d}.{m:02d}.{y} → Geisteszahl {g}" for (d,m,y),g in zip(group,geistes_list))
+        txt = KOLLEKTIV_TXT.get(kollektiv, "Dieses Kollektiv entfaltet eine besondere Dynamik und Lernaufgabe.")
+        await send_long_html(update, f"👥 <b>Gruppenenergie</b>\n\n{personen}\n\n<b>Zahl:</b> {kollektiv}\n\n{html_escape(txt)}", with_back=True)
+        return ConversationHandler.END
+
+    parsed = parse_dates_multi(text)
+    group = context.user_data.setdefault("group_birthdays", [])
+    group.extend(parsed)
+    await update.message.reply_html(f"✅ Hinzugefügt: {len(parsed)}. Tippen Sie <b>fertig</b>.", reply_markup=back_kb()); return ASK_GROUP
+
 # =============================== Bootstrap ==================================
 def main():
     app = Application.builder().token(API_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^open_menu$"))
-    # ВАЖНО: добавили full_* в entry_points, чтобы ловить выбор "использовать/ввести заново"
+    # Важно: ловим и full_use_saved/full_enter_new
     conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(on_menu_click, pattern="^(calc_|ki_mode|donate|stats|full_)")],
         states={
@@ -532,7 +563,7 @@ def main():
             ASK_COMPAT_2:  [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_compat2)],
             ASK_NAME:      [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name)],
             ASK_GROUP:     [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_group)],
-            ASK_PATH:      [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_path)],
+            ASK_PATH:      [MessageHandler(filters.TEXT & ~filters.COMMAND, build_entwicklungspfad_text)],
         },
         fallbacks=[CommandHandler("start", start)],
         allow_reentry=True
