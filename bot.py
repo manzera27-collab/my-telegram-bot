@@ -54,9 +54,8 @@ def _extract_numbered_sections(corpus: str, heading_regex: str) -> dict[int, str
         start = m.end()
         end = matches[i+1].start() if i+1 < len(matches) else len(corpus)
         block = corpus[start:end].strip()
-        # чистим лишние пустые строки и одиночные нумерации
-        block = re.sub(r'\n{3,}', '\n\n', block)
-        block = re.sub(r'\n\s*\d+\s*\n', '\n', block)
+        # НЕ удаляем одиночные числовые строки — они используются как подзаголовки дней (напр. 16, 25)
+        block = re.sub(r'\n{3,}', '\n\n', block)  # только лишние пустые строки
         out[n] = block
     return out
 
@@ -180,7 +179,15 @@ DAY_BIRTH_TXT: Dict[int, str] = {
 # ============================== Конфиг токена/ссылок ===============================
 load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
-PAYPAL_URL = os.getenv("PAYPAL_URL", "").strip()
+
+# PayPal: приоритет — PAYPAL_URL; если пусто, строим из PAYPAL_EMAIL (по умолчанию manzera@mail.ru)
+from urllib.parse import quote_plus
+PAYPAL_URL = (os.getenv("PAYPAL_URL", "") or "").strip()
+if not PAYPAL_URL:
+    PAYPAL_EMAIL = os.getenv("PAYPAL_EMAIL", "manzera@mail.ru").strip()
+    if PAYPAL_EMAIL:
+        PAYPAL_URL = f"https://www.paypal.com/donate?business={quote_plus(PAYPAL_EMAIL)}&no_recurring=0&currency_code=EUR"
+
 if not API_TOKEN:
     raise SystemExit("API_TOKEN is missing. Set it in env.")
 
@@ -249,10 +256,8 @@ async def send_long_html(update: Update, text: str, with_back: bool = True):
         src = src[cut:]
     if src: chunks.append(src)
     if not chunks: return
-    # все промежуточные куски без клавиатуры
     for c in chunks[:-1]:
         await update.message.reply_html(c)
-    # последний кусок — с кнопкой «назад», если требуется
     last_kb = back_kb() if with_back else None
     await update.message.reply_html(chunks[-1], reply_markup=last_kb)
 
@@ -285,25 +290,63 @@ def _touch_user(update: Update):
     except Exception:
         pass
 
+# -------------------------- Парсер подблоков "по дням" в Geisteszahl --------
+def split_geistes_block_by_days(block: str) -> Tuple[str, Dict[int, str]]:
+    """
+    Возвращает (общая_часть, {день: текст_раздела}).
+    Подзаголовки дней считаем строками, состоящими только из числа 1..31.
+    """
+    if not block:
+        return "", {}
+    pattern = re.compile(r'^\s*(?:#{1,6}\s*)?([1-9]|[12]\d|3[01])\s*$', re.M)  # '16', '25', '7' и т.п.
+    parts: Dict[int, str] = {}
+    matches = list(pattern.finditer(block))
+    if not matches:
+        return block.strip(), {}  # нет подзаголовков — всё общее
+    # Общая часть — до первого числового подзаголовка
+    general_start = 0
+    general_end = matches[0].start()
+    general = block[general_start:general_end].strip()
+
+    for i, m in enumerate(matches):
+        day = int(m.group(1))
+        start = m.end()
+        end = matches[i+1].start() if i+1 < len(matches) else len(block)
+        sec = block[start:end].strip()
+        parts[day] = sec
+    return general, parts
+
 # -------------------------- Хелперы сборки текстов ---------------------------
 def build_fullanalyse_text(d: int, m: int, y: int) -> str:
     g = geisteszahl(d)
     geld = geldcode(d, m, y)
     geist_short = GEISTES_TXT.get(g, "")
-    geist_full  = get_geistes(g)  # длинный блок из книги
+    geist_full  = get_geistes(g)  # длинный блок из книги (включая дневные подблоки)
     day_text    = (DAY_BIRTH_TXT.get(d) or "").strip()
     planet_info = PLANET_INFO.get(g, "")
+
+    # Разделяем общий текст Geisteszahl и подблоки по дням
+    general_g, day_parts = split_geistes_block_by_days(geist_full)
+    specific_day_part = day_parts.get(d, "").strip()
 
     parts = [
         f"<b>Vollanalyse für {d:02d}.{m:02d}.{y}</b>",
         f"🧠 <b>Geisteszahl {g}</b>\n{html_escape(geist_short)}",
     ]
-    if geist_full:
-        parts.append(html_escape(geist_full))
+    if general_g:
+        parts.append(html_escape(general_g))  # общий текст по самой Geisteszahl (например, 7)
+
+    # ❗ Сразу даём персональный подблок по введённому дню (например, 25),
+    #     НЕ добавляя промежуточные 16/7 и т. п.
+    if specific_day_part:
+        parts.append(f"\n📌 <b>Spezifisch für Geburtstag {d}</b>\n{html_escape(specific_day_part)}")
+
     if day_text:
         parts.append(f"\n📅 <b>Bedeutung des Geburtstagstages {d}</b>\n{html_escape(day_text)}")
+
     if planet_info:
         parts.append(f"\n➕ <b>Zusätzliche Info</b>\n{html_escape(planet_info)}")
+
     parts.append(f"\n💰 <b>Geldcode:</b> <code>{geld}</code>")
     return "\n\n".join(parts)
 
@@ -342,13 +385,8 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if dob:
             d,m,y = dob
             txt = build_fullanalyse_text(d,m,y)
-            # эмулируем автопрокрутку: последняя часть с кнопкой «назад»
-            # отправляем как новые сообщения, не трогаем исходное меню
-            fake_update = Update(update.update_id, message=q.message)  # тип: игнорируем; используем reply на message
-            # безопасно: используем исходный message как контейнер ответа
             await q.message.reply_html("🧮 Verwende gespeichertes Datum…")
-            update_for_send = Update(update.update_id, message=q.message)
-            await send_long_html(update_for_send, txt, with_back=True)
+            await send_long_html(Update(update.update_id, message=q.message), txt, with_back=True)
             return ConversationHandler.END
         await q.message.reply_html("🧮 Geben Sie Geburtsdatum ein (TT.MM.JJJJ):"); return ASK_FULL
 
@@ -357,8 +395,7 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             d,_,_ = dob
             txt = build_tagesenergie_text(d)
             await q.message.reply_html("☀️ Verwende gespeichertes Datum…")
-            update_for_send = Update(update.update_id, message=q.message)
-            await send_long_html(update_for_send, txt, with_back=True)
+            await send_long_html(Update(update.update_id, message=q.message), txt, with_back=True)
             return ConversationHandler.END
         await q.message.reply_html("Geben Sie Ihr Geburtsdatum ein (TT.MM.JJJJ):"); return ASK_DAY_BIRTH
 
@@ -381,8 +418,7 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             d,_,_ = dob
             txt = build_entwicklungspfad_text(d)
             await q.message.reply_html("🧭 Verwende gespeichertes Datum…")
-            update_for_send = Update(update.update_id, message=q.message)
-            await send_long_html(update_for_send, txt, with_back=True)
+            await send_long_html(Update(update.update_id, message=q.message), txt, with_back=True)
             return ConversationHandler.END
         await q.message.reply_html("🧭 Bitte Geburtsdatum eingeben (TT.MM.JJJJ):"); return ASK_PATH
 
@@ -393,7 +429,7 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if PAYPAL_URL:
             await q.message.reply_html(f"💖 <b>Spende</b>\nUnterstütze das Projekt via <a href=\"{PAYPAL_URL}\">PayPal</a>. Danke!", reply_markup=back_kb(), disable_web_page_preview=True)
         else:
-            await q.message.reply_html("💖 <b>Spende</b>\nSetze bitte ENV <code>PAYPAL_URL</code> mit deiner PayPal-Link.", reply_markup=back_kb())
+            await q.message.reply_html("💖 <b>Spende</b>\nSetze bitte ENV <code>PAYPAL_URL</code> oder <code>PAYPAL_EMAIL</code>.", reply_markup=back_kb())
         return ConversationHandler.END
 
     if data=="stats":
