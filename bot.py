@@ -554,21 +554,29 @@ async def on_menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data=="donate":
         if PAYPAL_URL:
-            await q.message.reply_html(f"💖 <b>Spende</b>\nUnterstütze das Projekt via <a href=\"{PAYPAL_URL}\">PayPal</a>. Danke!", reply_markup=back_kb(), disable_web_page_preview=True)
+            await q.message.reply_html(
+                f"💖 <b>Spende</b>\nUnterstütze das Projekt via <a href=\"{PAYPAL_URL}\">PayPal</a>. Danke!",
+                reply_markup=back_kb(),
+                disable_web_page_preview=True
+            )
         else:
-            await q.message.reply_html("💖 <b>Spende</b>\nSetze bitte ENV <code>PAYPAL_URL</code> oder <code>PAYPAL_EMAIL</code>.", reply_markup=back_kb())
+            await q.message.reply_html(
+                "💖 <b>Spende</b>\nSetze bitte ENV <code>PAYPAL_URL</code> oder <code>PAYPAL_EMAIL</code>.",
+                reply_markup=back_kb()
+            )
         return ConversationHandler.END
 
-if data=="stats":
-    if update.effective_user.id != ADMIN_ID:
-        await q.answer("Nur für Admin.", show_alert=True)
-        return ConversationHandler.END
-    await q.message.reply_html(
-        f"📊 <b>KeyToFate – Statistik</b>\n\n👥 Benutzer gesamt: <b>{len(USERS)}</b>",
-        reply_markup=back_kb()
-    )
-    return ConversationHandler.END
+    # -------- Statistik (nur für Admin) --------
+    if data=="stats":
+        if update.effective_user.id != ADMIN_ID:
+            await q.answer("Nur für Admin.", show_alert=True)
+            return ConversationHandler.END
 
+        await q.message.reply_html(
+            f"📊 <b>KeyToFate – Statistik</b>\n\n👥 Benutzer gesamt: <b>{len(USERS)}</b>",
+            reply_markup=back_kb()
+        )
+        return ConversationHandler.END
 
 # ---- Vollanalyse ----
 async def ask_full(update: Update, context: ContextTypes.DEFAULT_TYPE):
