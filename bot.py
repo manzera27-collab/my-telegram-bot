@@ -349,7 +349,7 @@ MENU_HEADER = "🔽 <b>Hauptmenü</b>\nBitte wählen Sie:"
 
 def main_menu(user_id: int) -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton("🧮 VOLLANALYSE – Start hier ⬅️⬅️, callback_data="calc_full")],
+        [InlineKeyboardButton("🧮 VOLLANALYSE – Start hier ⬅️⬅️", callback_data="calc_full")],
         [InlineKeyboardButton("☀️ Tagesenergie", callback_data="calc_day")],
         [InlineKeyboardButton("💞 Partnerschaft", callback_data="calc_compat")],
         [InlineKeyboardButton("🔤 Namensenergie", callback_data="calc_name")],
